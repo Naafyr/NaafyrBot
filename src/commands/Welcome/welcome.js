@@ -14,16 +14,31 @@ import { logger } from '../../utils/logger.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
 import { ErrorTypes, replyUserError } from '../../utils/errorHandler.js';
 
+const E = {
+    rules: String.fromCodePoint(0x1F4DC),
+    wave: String.fromCodePoint(0x1F44B),
+    respect: String.fromCodePoint(0x1F91D),
+    spam: String.fromCodePoint(0x1F6AB),
+    ads: String.fromCodePoint(0x1F4E2),
+    adult: String.fromCodePoint(0x1F51E),
+    bother: String.fromCodePoint(0x1F645),
+    voice: String.fromCodePoint(0x1F399, 0xFE0F),
+    record: String.fromCodePoint(0x1F3A5),
+    channels: String.fromCodePoint(0x1F4C2),
+    pin: String.fromCodePoint(0x1F4CC),
+    verify: String.fromCodePoint(0x2705)
+};
+
 const RULES_TEXT = [
-    '🤝 **1. Respektvoll miteinander umgehen**\nBehandle andere Mitglieder freundlich und respektvoll. Beleidigungen, Provokationen und unnötiger Streit gehören hier nicht hin.',
-    '🚫 **2. Kein Spam**\nKein unnötiges Spammen von Nachrichten, Emojis, Bildern, Sounds oder Erwähnungen.',
-    '📢 **3. Keine Werbung**\nWerbung für eigene Server, Social-Media-Kanäle, Streams oder andere Inhalte ist ohne vorherige Erlaubnis nicht gestattet.',
-    '🔞 **4. Keine unangemessenen Inhalte**\nExtremistische, diskriminierende, sexuelle oder anderweitig problematische Inhalte haben auf dem Server nichts verloren.',
-    '🙅 **5. Andere Mitglieder nicht nerven oder bedrängen**\nRespektiere, wenn Leute gerade miteinander reden oder spielen.',
-    '🎙️ **6. Rücksicht im Voice-Chat**\nKein absichtliches Schreien, Soundboard-Spam oder extrem laute Geräusche.',
-    '🎥 **7. Aufnahmen nur mit Zustimmung**\nWenn Stimmen oder Gespräche aufgenommen oder veröffentlicht werden sollen, sollten die betroffenen Personen vorher Bescheid wissen.',
-    '📂 **8. Nutzt die richtigen Channels**\nVersucht Inhalte in die dafür vorgesehenen Channels zu schicken.',
-    '📌 **9. Discord-Regeln gelten weiterhin**\nDie Nutzungsbedingungen und Community-Richtlinien von Discord gelten selbstverständlich auch hier.'
+    `${E.respect} **1. Respektvoll miteinander umgehen**\nBehandle andere Mitglieder freundlich und respektvoll. Beleidigungen, Provokationen und unnötiger Streit gehören hier nicht hin.`,
+    `${E.spam} **2. Kein Spam**\nKein unnötiges Spammen von Nachrichten, Emojis, Bildern, Sounds oder Erwähnungen.`,
+    `${E.ads} **3. Keine Werbung**\nWerbung für eigene Server, Social-Media-Kanäle, Streams oder andere Inhalte ist ohne vorherige Erlaubnis nicht gestattet.`,
+    `${E.adult} **4. Keine unangemessenen Inhalte**\nExtremistische, diskriminierende, sexuelle oder anderweitig problematische Inhalte haben auf dem Server nichts verloren.`,
+    `${E.bother} **5. Andere Mitglieder nicht nerven oder bedrängen**\nRespektiere, wenn Leute gerade miteinander reden oder spielen.`,
+    `${E.voice} **6. Rücksicht im Voice-Chat**\nKein absichtliches Schreien, Soundboard-Spam oder extrem laute Geräusche.`,
+    `${E.record} **7. Aufnahmen nur mit Zustimmung**\nWenn Stimmen oder Gespräche aufgenommen oder veröffentlicht werden sollen, sollten die betroffenen Personen vorher Bescheid wissen.`,
+    `${E.channels} **8. Nutzt die richtigen Channels**\nVersucht Inhalte in die dafür vorgesehenen Channels zu schicken.`,
+    `${E.pin} **9. Discord-Regeln gelten weiterhin**\nDie Nutzungsbedingungen und Community-Richtlinien von Discord gelten selbstverständlich auch hier.`
 ].join('\n\n');
 
 function findRoleGating(channel, guild) {
@@ -174,13 +189,13 @@ export default {
 
             const rulesEmbed = new EmbedBuilder()
                 .setColor(0xB84DFF)
-                .setTitle('📜 SERVER-REGELN')
+                .setTitle(`${E.rules} SERVER-REGELN`)
                 .setDescription(
-                    'Willkommen auf **' + guild.name + '**! 👋\n' +
+                    `Willkommen auf **${guild.name}**! ${E.wave}\n` +
                     'Bitte lies dir die Regeln kurz durch, bevor du dich verifizierst.\n\n' +
                     RULES_TEXT +
-                    '\n\n✅ **VERIFIZIERUNG**\n\n' +
-                    'Mit einem Klick auf **✅ Verifizieren** bestätigst du, dass du die Regeln gelesen hast und akzeptierst.\n\n' +
+                    `\n\n${E.verify} **VERIFIZIERUNG**\n\n` +
+                    `Mit einem Klick auf **${E.verify} Verifizieren** bestätigst du, dass du die Regeln gelesen hast und akzeptierst.\n\n` +
                     'Danach erhältst du Zugriff auf die normalen Server-Channels.'
                 );
 
