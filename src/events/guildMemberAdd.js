@@ -38,10 +38,7 @@ export default {
 
                 const messageContent = welcomeConfig.welcomePing ? user.toString() : null;
 
-                const embedTitle = formatWelcomeMessage(
-                    welcomeConfig.welcomeEmbed?.title || '🎉 Willkommen!',
-                    formatData
-                );
+                const embedTitle = '🎉 Willkommen!';
                 const embedFooter = welcomeConfig.welcomeEmbed?.footer
                     ? formatWelcomeMessage(welcomeConfig.welcomeEmbed.footer, formatData)
                     : `Willkommen auf ${guild.name}!`;
