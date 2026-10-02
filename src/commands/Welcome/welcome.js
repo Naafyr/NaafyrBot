@@ -14,17 +14,17 @@ import { logger } from '../../utils/logger.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
 import { ErrorTypes, replyUserError } from '../../utils/errorHandler.js';
 
-const RULES_TEXT = [
-    '🤝 **1. Respektvoll miteinander umgehen**\nBehandle andere Mitglieder freundlich und respektvoll. Beleidigungen, Provokationen und unnötiger Streit gehören hier nicht hin.',
-    '🚫 **2. Kein Spam**\nKein unnötiges Spammen von Nachrichten, Emojis, Bildern, Sounds oder Erwähnungen.',
-    '📢 **3. Keine Werbung**\nWerbung für eigene Server, Social-Media-Kanäle, Streams oder andere Inhalte ist ohne vorherige Erlaubnis nicht gestattet.',
-    '🔞 **4. Keine unangemessenen Inhalte**\nExtremistische, diskriminierende, sexuelle oder anderweitig problematische Inhalte haben auf dem Server nichts verloren.',
-    '🙅 **5. Andere Mitglieder nicht nerven oder bedrängen**\nRespektiere, wenn Leute gerade miteinander reden oder spielen.',
-    '🎙️ **6. Rücksicht im Voice-Chat**\nKein absichtliches Schreien, Soundboard-Spam oder extrem laute Geräusche.',
-    '🎥 **7. Aufnahmen nur mit Zustimmung**\nWenn Stimmen oder Gespräche aufgenommen oder veröffentlicht werden sollen, sollten die betroffenen Personen vorher Bescheid wissen.',
-    '📂 **8. Nutzt die richtigen Channels**\nVersucht Inhalte in die dafür vorgesehenen Channels zu schicken.',
-    '📌 **9. Discord-Regeln gelten weiterhin**\nDie Nutzungsbedingungen und Community-Richtlinien von Discord gelten selbstverständlich auch hier.'
-].join('\n\n');
+const RULE_FIELDS = [
+    { name: '🤝 1. Respektvoll miteinander umgehen', value: 'Behandle andere Mitglieder freundlich und respektvoll. Beleidigungen, Provokationen und unnötiger Streit gehören hier nicht hin.' },
+    { name: '🚫 2. Kein Spam', value: 'Kein unnötiges Spammen von Nachrichten, Emojis, Bildern, Sounds oder Erwähnungen.' },
+    { name: '📢 3. Keine Werbung', value: 'Werbung für eigene Server, Social-Media-Kanäle, Streams oder andere Inhalte ist ohne vorherige Erlaubnis nicht gestattet.' },
+    { name: '🔞 4. Keine unangemessenen Inhalte', value: 'Extremistische, diskriminierende, sexuelle oder anderweitig problematische Inhalte haben auf dem Server nichts verloren.' },
+    { name: '🙅 5. Andere Mitglieder nicht nerven oder bedrängen', value: 'Respektiere, wenn Leute gerade miteinander reden oder spielen.' },
+    { name: '🎙️ 6. Rücksicht im Voice-Chat', value: 'Kein absichtliches Schreien, Soundboard-Spam oder extrem laute Geräusche.' },
+    { name: '🎥 7. Aufnahmen nur mit Zustimmung', value: 'Wenn Stimmen oder Gespräche aufgenommen oder veröffentlicht werden sollen, sollten die betroffenen Personen vorher Bescheid wissen.' },
+    { name: '📂 8. Nutzt die richtigen Channels', value: 'Versucht Inhalte in die dafür vorgesehenen Channels zu schicken.' },
+    { name: '📌 9. Discord-Regeln gelten weiterhin', value: 'Die Nutzungsbedingungen und Community-Richtlinien von Discord gelten selbstverständlich auch hier.' }
+];
 
 function findRoleGating(channel, guild) {
     const overwrites = channel.permissionOverwrites?.cache;
@@ -177,11 +177,16 @@ export default {
                 .setTitle('📜 SERVER-REGELN')
                 .setDescription(
                     'Willkommen auf **' + guild.name + '**! 👋\n' +
-                    'Bitte lies dir die Regeln kurz durch, bevor du dich verifizierst.\n\n' +
-                    RULES_TEXT +
-                    '\n\n✅ **VERIFIZIERUNG**\n' +
-                    'Mit einem Klick auf **✅ Verifizieren** bestätigst du, dass du die Regeln gelesen hast und akzeptierst.\n\n' +
-                    'Danach erhältst du Zugriff auf die normalen Server-Channels.'
+                    'Bitte lies dir die Regeln kurz durch, bevor du dich verifizierst.'
+                )
+                .addFields(
+                    ...RULE_FIELDS,
+                    {
+                        name: '✅ VERIFIZIERUNG',
+                        value:
+                            'Mit einem Klick auf **✅ Verifizieren** bestätigst du, dass du die Regeln gelesen hast und akzeptierst.\n\n' +
+                            'Danach erhältst du Zugriff auf die normalen Server-Channels.'
+                    }
                 );
 
             const verifyButton = new ActionRowBuilder().addComponents(
