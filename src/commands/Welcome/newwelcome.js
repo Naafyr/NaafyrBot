@@ -387,17 +387,20 @@ export default {
 
             await getOrCreateVoiceChannel(
                 guild,
-                '⏳┃wartebereich',
-                ['wartebereich', 'waiting-room', 'waiting-for-moving'],
-                voiceCategory
-            );
-
-            await getOrCreateVoiceChannel(
-                guild,
                 '😴┃afk',
                 ['afk'],
                 voiceCategory
             );
+
+
+            const legacyWaitingChannel = guild.channels.cache.find(
+                channel => channel.type === ChannelType.GuildVoice
+                    && ['⏳┃wartebereich', 'wartebereich', 'waiting-room', 'waiting-for-moving'].includes(channel.name)
+            );
+
+            if (legacyWaitingChannel && legacyWaitingChannel.members.size === 0) {
+                await legacyWaitingChannel.delete('Replaced by per-private-room waiting channels').catch(() => {});
+            }
 
             await getOrCreateTextChannel(
                 guild,
