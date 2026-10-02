@@ -139,9 +139,9 @@ function collectCommandPayloads(client) {
         const commandName = command.data.name;
         logger.debug(`Processing command for registration: ${commandName}`);
 
-        // /refresh is intentionally guild-only so it appears immediately and only once.
-        if (commandName === 'refresh') {
-            logger.debug('Skipping /refresh in global registration; it is registered per guild');
+        // Fast-changing admin/setup commands are guild-only so Discord shows updates immediately.
+        if (commandName === 'refresh' || commandName === 'serverstats') {
+            logger.debug(`Skipping /${commandName} in global registration; it is registered per guild`);
             continue;
         }
 
@@ -299,17 +299,22 @@ export async function registerGuildRefreshCommand(client, guildId, options = {})
         throw new Error('Discord REST client is not available for slash command registration');
     }
 
-    const refreshCommand = client.commands.get('refresh');
-    if (!refreshCommand?.data || typeof refreshCommand.data.toJSON !== 'function') {
-        throw new Error('Refresh command is not loaded');
+    const immediateNames = ['refresh', 'serverstats'];
+    const immediatePayloads = [];
+
+    for (const name of immediateNames) {
+        const command = client.commands.get(name);
+        if (!command?.data || typeof command.data.toJSON !== 'function') {
+            throw new Error(`Command /${name} is not loaded`);
+        }
+        immediatePayloads.push(command.data.toJSON());
     }
 
     const route = `/applications/${clientId}/guilds/${guildId}/commands`;
     const existing = await client.rest.get(route);
-    const refreshPayload = refreshCommand.data.toJSON();
 
     const merged = [
-        ...existing.filter(command => command.name !== 'refresh').map(command => ({
+        ...existing.filter(command => !immediateNames.includes(command.name)).map(command => ({
             name: command.name,
             description: command.description,
             type: command.type,
@@ -320,11 +325,11 @@ export async function registerGuildRefreshCommand(client, guildId, options = {})
             integration_types: command.integration_types,
             contexts: command.contexts
         })),
-        refreshPayload
+        ...immediatePayloads
     ];
 
     await client.rest.put(route, { body: merged });
-    logger.info(`Registered /refresh immediately for guild ${guildId}`);
+    logger.info(`Registered /refresh and /serverstats immediately for guild ${guildId}`);
 }
 
 export async function reloadCommand(client, commandName) {
