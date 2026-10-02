@@ -50,6 +50,56 @@ export async function ensureModLogChannel(guild) {
   return channel;
 }
 
+export const TEST_CHANNEL_NAME = '🧪┃test';
+
+// Eigener Spam-/Test-Channel für Admins in der Mod-Kategorie.
+export async function ensureTestChannel(guild, modLog) {
+  const existing = guild.channels.cache.find(channel => channel.type === ChannelType.GuildText && channel.name === TEST_CHANNEL_NAME);
+  if (existing) return { channel: existing, created: false };
+
+  const channel = await guild.channels.create({
+    name: TEST_CHANNEL_NAME,
+    type: ChannelType.GuildText,
+    parent: modLog.parentId,
+    topic: 'Zum Testen und Rumspammen – nur für Admins',
+    permissionOverwrites: [
+      { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+      { id: guild.members.me.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks] }
+    ],
+    reason: 'NaafyrBot Test-Channel'
+  });
+  return { channel, created: true };
+}
+
+// Discords Standard-Kategorien beim Server-Erstellen ("Textkanäle" → #allgemein, "Sprachkanäle" → Allgemein).
+// Nur exakte Original-Namen – unsere eigenen Channels (💬┃allgemein, ──── 🔊 VOICE 🔊 ────) bleiben unberührt.
+const DEFAULT_CATEGORY_NAMES = new Set(['textkanäle', 'text channels', 'sprachkanäle', 'voice channels', 'voice']);
+const DEFAULT_CHANNEL_NAMES = new Set(['allgemein', 'general']);
+
+export async function removeDiscordDefaults(guild, { keepChannelId = null } = {}) {
+  const removed = [];
+  const categories = guild.channels.cache.filter(channel =>
+    channel.type === ChannelType.GuildCategory && DEFAULT_CATEGORY_NAMES.has(channel.name.toLowerCase())
+  );
+
+  for (const category of categories.values()) {
+    const children = guild.channels.cache.filter(channel => channel.parentId === category.id);
+
+    for (const child of children.values()) {
+      if (!DEFAULT_CHANNEL_NAMES.has(child.name.toLowerCase()) || child.id === keepChannelId) continue;
+      await child.delete('Discord-Standardchannel entfernt').then(() => removed.push(`${category.name} → ${child.name}`)).catch(() => {});
+    }
+
+    // Kategorie nur löschen, wenn wirklich nichts anderes mehr drin ist.
+    const remaining = guild.channels.cache.filter(channel => channel.parentId === category.id);
+    if (remaining.size === 0) {
+      await category.delete('Discord-Standardkategorie entfernt').then(() => removed.push(category.name)).catch(() => {});
+    }
+  }
+
+  return removed;
+}
+
 // ---------- Logging-Konfiguration ----------
 
 export async function configureLogging(client, guildId, channelId) {

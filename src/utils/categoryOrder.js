@@ -25,19 +25,28 @@ export function desiredCategoryOrder(categories) {
   return [...known, ...others];
 }
 
-// Sortiert die Kategorien; tut nichts, wenn sie schon stimmen.
+// Sortiert die Kategorien. Gibt die Namen zurück, die nicht verschoben werden konnten.
 export async function sortCategories(guild) {
   const categories = [...guild.channels.cache.filter(channel => channel.type === ChannelType.GuildCategory).values()]
     .sort((a, b) => a.position - b.position);
   const desired = desiredCategoryOrder(categories);
 
-  if (desired.every((category, index) => categories[index]?.id === category.id)) return false;
+  if (desired.every((category, index) => categories[index]?.id === category.id)) return [];
 
   try {
     await guild.channels.setPositions(desired.map((category, index) => ({ channel: category.id, position: index })));
-    return true;
+    return [];
   } catch (error) {
-    logger.warn('[Kategorien] Sortieren fehlgeschlagen', { guildId: guild.id, error: error.message });
-    return false;
+    // Meist fehlt dem Bot bei einer Kategorie der Zugriff → einzeln verschieben, Rest trotzdem sortieren.
+    logger.warn('[Kategorien] Sammel-Sortierung fehlgeschlagen, versuche einzeln', { guildId: guild.id, error: error.message });
   }
+
+  const failed = [];
+  for (const [index, category] of desired.entries()) {
+    await category.setPosition(index).catch(error => {
+      failed.push(category.name);
+      logger.warn('[Kategorien] Konnte Kategorie nicht verschieben', { guildId: guild.id, category: category.name, error: error.message });
+    });
+  }
+  return failed;
 }

@@ -3,7 +3,13 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder
 } from 'discord.js';
-import { configureLogging, ensureAutoModRules, ensureModLogChannel } from '../../services/moderationSetupService.js';
+import {
+  configureLogging,
+  ensureAutoModRules,
+  ensureModLogChannel,
+  ensureTestChannel,
+  removeDiscordDefaults
+} from '../../services/moderationSetupService.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
 import { replyUserError, ErrorTypes } from '../../utils/errorHandler.js';
 import { logger } from '../../utils/logger.js';
@@ -36,10 +42,21 @@ export default {
       const channel = await ensureModLogChannel(guild);
       await configureLogging(client, guild.id, channel.id);
       const { results, canTimeout } = await ensureAutoModRules(guild, channel.id);
-      await sortCategories(guild);
+      const testChannel = await ensureTestChannel(guild, channel);
+
+      // Den Channel, in dem der Command gerade läuft, nicht löschen (sonst geht die Antwort ins Leere).
+      const removed = await removeDiscordDefaults(guild, { keepChannelId: interaction.channelId });
+      const keptCurrent = guild.channels.cache.get(interaction.channelId)?.parent
+        && ['textkanäle', 'text channels'].includes(guild.channels.cache.get(interaction.channelId).parent.name.toLowerCase());
+
+      const notSorted = await sortCategories(guild);
 
       const lines = [
         `✅ **Moderation eingerichtet** in ${channel} (nur für Admins sichtbar).`,
+        `🧪 Dein Test-Channel: ${testChannel.channel}${testChannel.created ? ' (neu)' : ''}`,
+        ...(removed.length > 0 ? [`🗑️ Discord-Standard entfernt: ${removed.join(', ')}`] : []),
+        ...(keptCurrent ? ['ℹ️ Den Channel, in dem du gerade bist, habe ich nicht gelöscht. Führ `/mod setup` nochmal in 🧪┃test aus, dann ist er weg.'] : []),
+        ...(notSorted.length > 0 ? [`⚠️ Diese Kategorien konnte ich nicht verschieben (Bot hat dort keinen Zugriff): ${notSorted.join(', ')}`] : []),
         '',
         '🛡️ **Auto-Mod**',
         ...results,

@@ -4,6 +4,7 @@ import config from "../config/application.js";
 import { reconcileTicketPanels, reconcileVerificationPanels } from "../services/panelHealthService.js";
 import { cleanupCustomVoiceRooms } from "../services/customVoiceCreateService.js";
 import { checkBirthdays } from "../services/birthdayService.js";
+import { sortCategories } from "../utils/categoryOrder.js";
 
 export default {
   name: Events.ClientReady,
@@ -22,6 +23,11 @@ export default {
 
       // Falls der Bot um Mitternacht offline war: heutige Gratulation nachholen (nur einmal pro Tag).
       await checkBirthdays(client);
+
+      for (const guild of client.guilds.cache.values()) {
+        const failed = await sortCategories(guild);
+        if (failed.length > 0) startupLog(`Kategorien nicht verschiebbar (Bot ohne Zugriff): ${failed.join(', ')}`);
+      }
 
       const ticketPanelSummary = await reconcileTicketPanels(client);
       startupLog(
