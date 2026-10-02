@@ -99,11 +99,25 @@ function findYouTubeChannel(guild) {
   ) || null;
 }
 
-async function alreadyPosted(channel, clientUserId, video) {
+async function alreadyPosted(client, guildId, channel, clientUserId, video) {
+  const stateKey = `guild:${guildId}:youtube:lastVideoId`;
+
+  try {
+    const savedVideoId = await client.db?.get?.(stateKey);
+    if (savedVideoId === video.videoId) {
+      return true;
+    }
+  } catch (error) {
+    logger.warn('[YouTube] Could not read last posted video ID from database', {
+      guildId,
+      error: error.message
+    });
+  }
+
   const messages = await channel.messages.fetch({ limit: 50 }).catch(() => null);
   if (!messages) return false;
 
-  return messages.some(message => {
+  const found = messages.some(message => {
     if (message.author.id !== clientUserId) return false;
 
     return message.embeds?.some(embed =>
@@ -111,6 +125,19 @@ async function alreadyPosted(channel, clientUserId, video) {
       embed.footer?.text === `${LEGACY_FOOTER_PREFIX}${video.videoId}`
     );
   });
+
+  if (found) {
+    try {
+      await client.db?.set?.(stateKey, video.videoId);
+    } catch (error) {
+      logger.warn('[YouTube] Could not persist discovered video ID', {
+        guildId,
+        error: error.message
+      });
+    }
+  }
+
+  return found;
 }
 
 function buildVideoEmbed(video) {
@@ -162,7 +189,7 @@ export async function checkYouTubeForGuild(client, guild) {
     return { checked: true, posted: false, reason: 'channel_missing', video };
   }
 
-  if (await alreadyPosted(channel, client.user.id, video)) {
+  if (await alreadyPosted(client, guild.id, channel, client.user.id, video)) {
     return { checked: true, posted: false, reason: 'already_posted', video, channel };
   }
 
@@ -170,6 +197,16 @@ export async function checkYouTubeForGuild(client, guild) {
     embeds: [buildVideoEmbed(video)],
     components: [buildVideoButton(video)]
   });
+
+  try {
+    await client.db?.set?.(`guild:${guild.id}:youtube:lastVideoId`, video.videoId);
+  } catch (error) {
+    logger.warn('[YouTube] Could not persist posted video ID', {
+      guildId: guild.id,
+      videoId: video.videoId,
+      error: error.message
+    });
+  }
 
   logger.info('[YouTube] New upload announcement created', {
     guildId: guild.id,
