@@ -12,7 +12,7 @@ const YOUTUBE_HANDLE = 'Naafyr';
 const YOUTUBE_CHANNEL_URL = `https://www.youtube.com/@${YOUTUBE_HANDLE}`;
 const YOUTUBE_FEED_BASE = 'https://www.youtube.com/feeds/videos.xml';
 const YOUTUBE_CHANNEL_NAMES = new Set(['📺┃neue-videos', 'neue-videos', 'videos']);
-const FOOTER_PREFIX = 'YouTube • ';
+const LEGACY_FOOTER_PREFIX = 'YouTube • ';
 
 let cachedChannelId = null;
 
@@ -41,7 +41,6 @@ async function resolveChannelId() {
   });
 
   const html = response.data;
-
   const candidates = [
     /"channelId":"(UC[a-zA-Z0-9_-]{20,})"/,
     /<meta\s+itemprop="channelId"\s+content="(UC[a-zA-Z0-9_-]{20,})"/i,
@@ -69,7 +68,6 @@ function parseLatestEntry(xml) {
   const published = extractFirst(entry, /<published>([^<]+)<\/published>/i);
   const linkMatch = entry.match(/<link[^>]+rel="alternate"[^>]+href="([^"]+)"/i)
     || entry.match(/<link[^>]+href="([^"]+)"[^>]+rel="alternate"/i);
-  const thumbnailMatch = entry.match(/<media:thumbnail[^>]+url="([^"]+)"/i);
 
   if (!videoId || !title) return null;
 
@@ -78,7 +76,7 @@ function parseLatestEntry(xml) {
     title,
     published,
     url: decodeXml(linkMatch?.[1] || `https://www.youtube.com/watch?v=${videoId}`),
-    thumbnail: thumbnailMatch?.[1] ? decodeXml(thumbnailMatch[1]) : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+    thumbnail: `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`
   };
 }
 
@@ -101,24 +99,36 @@ function findYouTubeChannel(guild) {
   ) || null;
 }
 
-async function alreadyPosted(channel, clientUserId, videoId) {
+async function alreadyPosted(channel, clientUserId, video) {
   const messages = await channel.messages.fetch({ limit: 50 }).catch(() => null);
   if (!messages) return false;
 
-  return messages.some(message =>
-    message.author.id === clientUserId &&
-    message.embeds?.some(embed => embed.footer?.text === `${FOOTER_PREFIX}${videoId}`)
-  );
+  return messages.some(message => {
+    if (message.author.id !== clientUserId) return false;
+
+    return message.embeds?.some(embed =>
+      embed.url === video.url ||
+      embed.footer?.text === `${LEGACY_FOOTER_PREFIX}${video.videoId}`
+    );
+  });
 }
 
 function buildVideoEmbed(video) {
   const embed = new EmbedBuilder()
-    .setColor(0xFF0000)
+    .setColor(0xFF0033)
+    .setAuthor({
+      name: 'Naafyr auf YouTube',
+      url: YOUTUBE_CHANNEL_URL
+    })
     .setTitle('📺 Neues Video ist online!')
     .setURL(video.url)
-    .setDescription(video.title)
+    .setDescription([
+      `## ${video.title}`,
+      '',
+      '🎬 **Frisch hochgeladen – jetzt auf YouTube ansehen.**'
+    ].join('\n'))
     .setImage(video.thumbnail)
-    .setFooter({ text: `${FOOTER_PREFIX}${video.videoId}` });
+    .setFooter({ text: 'YouTube • @Naafyr' });
 
   if (video.published) {
     embed.setTimestamp(new Date(video.published));
@@ -137,31 +147,45 @@ function buildVideoButton(video) {
   );
 }
 
+export async function checkYouTubeForGuild(client, guild) {
+  if (!client?.isReady?.()) {
+    return { checked: false, posted: false, reason: 'client_not_ready' };
+  }
+
+  const video = await fetchLatestVideo();
+  if (!video) {
+    return { checked: true, posted: false, reason: 'no_video' };
+  }
+
+  const channel = findYouTubeChannel(guild);
+  if (!channel) {
+    return { checked: true, posted: false, reason: 'channel_missing', video };
+  }
+
+  if (await alreadyPosted(channel, client.user.id, video)) {
+    return { checked: true, posted: false, reason: 'already_posted', video, channel };
+  }
+
+  await channel.send({
+    embeds: [buildVideoEmbed(video)],
+    components: [buildVideoButton(video)]
+  });
+
+  logger.info('[YouTube] New upload announcement created', {
+    guildId: guild.id,
+    channelId: channel.id,
+    videoId: video.videoId
+  });
+
+  return { checked: true, posted: true, reason: 'posted', video, channel };
+}
+
 export async function checkYouTubeUploads(client) {
   if (!client?.isReady?.()) return;
 
-  const video = await fetchLatestVideo();
-  if (!video) return;
-
   for (const guild of client.guilds.cache.values()) {
     try {
-      const channel = findYouTubeChannel(guild);
-      if (!channel) continue;
-
-      if (await alreadyPosted(channel, client.user.id, video.videoId)) {
-        continue;
-      }
-
-      await channel.send({
-        embeds: [buildVideoEmbed(video)],
-        components: [buildVideoButton(video)]
-      });
-
-      logger.info('[YouTube] New upload announcement created', {
-        guildId: guild.id,
-        channelId: channel.id,
-        videoId: video.videoId
-      });
+      await checkYouTubeForGuild(client, guild);
     } catch (error) {
       logger.error('[YouTube] Failed to update Discord upload feed', {
         guildId: guild.id,
