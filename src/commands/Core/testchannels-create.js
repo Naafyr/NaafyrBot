@@ -8,15 +8,29 @@ const CATEGORY_NAME = '🧪 Test-Channel-Varianten';
 const TEST_TOPIC = 'NaafyrBot temporary channel style test';
 
 const TEST_CHANNEL_NAMES = [
-    '📜【-test-】',
-    '📜│test',
-    '📜┃test'
+    // Variante 1: Klammern
+    '📜【-regeln-】',
+    '🔴【-live-】',
+    '📺【-neue-videos-】',
+    '✂️【-clips-und-highlights-】',
+
+    // Variante 2: langer, dünner Strich
+    '📜│regeln',
+    '🔴│live',
+    '📺│neue-videos',
+    '✂️│clips-und-highlights',
+
+    // Variante 3: kurzer/dicker Strich
+    '📜┃regeln',
+    '🔴┃live',
+    '📺┃neue-videos',
+    '✂️┃clips-und-highlights'
 ];
 
 export default {
     data: new SlashCommandBuilder()
         .setName('testchannels-create')
-        .setDescription('Erstellt drei Test-Channels für Kanalnamen-Styles')
+        .setDescription('Erstellt 12 Test-Channels in drei Kanalnamen-Styles')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
     async execute(interaction) {
@@ -54,15 +68,13 @@ export default {
             }
         } catch (error) {
             return interaction.editReply(
-                `⚠️ Test-Kategorie erstellt, aber nur **${created}/3** Channels konnten angelegt werden. Fehler: ${error.message}`
+                `⚠️ Test-Kategorie erstellt, aber nur **${created}/12** Channels konnten angelegt werden. Fehler: ${error.message}`
             );
         }
 
         return interaction.editReply(
-            '✅ **3 Test-Channels erstellt.**\n' +
-            '📜【-test-】\n' +
-            '📜│test\n' +
-            '📜┃test\n\n' +
+            '✅ **12 Test-Channels erstellt.**\n' +
+            'Je 4 Beispiele für Klammern, │ und ┃.\n\n' +
             'Zum Aufräumen: **/testchannels-delete**'
         );
     }
