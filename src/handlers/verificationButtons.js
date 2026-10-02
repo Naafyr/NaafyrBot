@@ -1,16 +1,30 @@
-import { MessageFlags } from 'discord.js';
-import { successEmbed } from '../utils/embeds.js';
+import { EmbedBuilder, MessageFlags } from 'discord.js';
 import { verifyUser } from '../services/verificationService.js';
 import { handleInteractionError, replyUserError, ErrorTypes } from '../utils/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { InteractionHelper } from '../utils/interactionHelper.js';
+
+function verifiedNextStepEmbed(roleName) {
+    return new EmbedBuilder()
+        .setColor(0x57F287)
+        .setTitle('✅ Verifiziert – abgeschlossen')
+        .setDescription(
+            'Du hast die Regeln bestätigt und die Rolle **' + roleName + '** erhalten.\n\n' +
+            '➡️ **Und jetzt?**\n' +
+            '**Als Nächstes: Rollen & Interessen**\n' +
+            'Dort kannst du dir später die Rollen auswählen, die zu dir passen.'
+        );
+}
 
 export async function handleVerificationButton(interaction, client) {
     try {
         await InteractionHelper.safeDefer(interaction, { flags: MessageFlags.Ephemeral });
 
         if (!interaction.guild) {
-            return await replyUserError(interaction, { type: ErrorTypes.UNKNOWN, message: 'This button can only be used in a server.' });
+            return await replyUserError(interaction, {
+                type: ErrorTypes.UNKNOWN,
+                message: 'Dieser Button kann nur auf einem Server verwendet werden.'
+            });
         }
 
         const guild = interaction.guild;
@@ -28,7 +42,9 @@ export async function handleVerificationButton(interaction, client) {
         });
 
         if (result.status === 'already_verified') {
-            return await replyUserError(interaction, { type: ErrorTypes.VALIDATION, message: 'You are already verified and have access to all server channels.' });
+            return await InteractionHelper.safeEditReply(interaction, {
+                embeds: [verifiedNextStepEmbed(result.roleName || 'Verifiziert')]
+            });
         }
 
         logger.info('User verified via button', {
@@ -38,10 +54,7 @@ export async function handleVerificationButton(interaction, client) {
         });
 
         await InteractionHelper.safeEditReply(interaction, {
-            embeds: [successEmbed(
-                "✅ Verification Successful!",
-                `You have been verified and given the **${result.roleName}** role!\n\nYou now have access to all server channels and features. Welcome! 🎉`
-            )],
+            embeds: [verifiedNextStepEmbed(result.roleName || 'Verifiziert')]
         });
 
     } catch (error) {
@@ -60,6 +73,6 @@ export async function handleVerificationButton(interaction, client) {
 }
 
 export default {
-    customId: "verify_user",
+    customId: 'verify_user',
     execute: handleVerificationButton
 };
