@@ -52,12 +52,12 @@ export async function handleSetup(interaction, client) {
     ) || null;
 
     let category = guild.channels.cache.find(
-      channel => channel.type === ChannelType.GuildCategory && channel.name === '──── SERVER-STATISTIKEN ────'
+      channel => channel.type === ChannelType.GuildCategory && channel.name === '──── 📊 SERVER-STATISTIKEN ────'
     );
 
     if (!category) {
       category = await guild.channels.create({
-        name: '──── SERVER-STATISTIKEN ────',
+        name: '──── 📊 SERVER-STATISTIKEN ────',
         type: ChannelType.GuildCategory,
         permissionOverwrites: buildVisibilityOverwrites(guild, verifiedRole),
         reason: 'NaafyrBot server statistics setup'
@@ -108,7 +108,7 @@ export async function handleSetup(interaction, client) {
     await InteractionHelper.safeEditReply(interaction, {
       content:
         '✅ **Server-Statistik eingerichtet.**\n' +
-        'Erstellt/verwendet wurden **──── SERVER-STATISTIKEN ────** mit:\n' +
+        'Erstellt/verwendet wurden **──── 📊 SERVER-STATISTIKEN ────** mit:\n' +
         '👥 Mitglieder\n' +
         '🟢 Online\n' +
         '🚀 Boosts\n\n' +
