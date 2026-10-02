@@ -10,6 +10,7 @@ import { getGuildConfig } from './services/config/guildConfig.js';
 import { getServerCounters, saveServerCounters, updateCounter, getGuildCounterStats } from './services/serverstatsService.js';
 import { checkTwitchLive } from './services/twitchLiveService.js';
 import { checkYouTubeUploads } from './services/youtubeUploadService.js';
+import { trackVoiceMinute, flushLeaderboard, updateLeaderboards } from './services/leaderboardService.js';
 import { logger, startupLog, shutdownLog } from './utils/logger.js';
 import { checkBirthdays } from './services/birthdayService.js';
 import { checkGiveaways } from './services/giveawayService.js';
@@ -269,6 +270,11 @@ class TitanBot extends Client {
     cron.schedule('* * * * *', runSafeTask('twitch_live_check', () => checkTwitchLive(this)));
     cron.schedule('0,30 9-16 * * 2,6', runSafeTask('youtube_upload_check', () => checkYouTubeUploads(this)), { timezone: 'Europe/Vienna' });
     cron.schedule('0 17 * * 2,6', runSafeTask('youtube_upload_check_final', () => checkYouTubeUploads(this)), { timezone: 'Europe/Vienna' });
+    cron.schedule('* * * * *', runSafeTask('rangliste_tick', async () => {
+      trackVoiceMinute(this);
+      await flushLeaderboard(this);
+    }));
+    cron.schedule('*/10 * * * *', runSafeTask('rangliste_update', () => updateLeaderboards(this)), { timezone: 'Europe/Vienna' });
   }
 
   async updateAllCounters() {
@@ -361,6 +367,8 @@ class TitanBot extends Client {
       logger.info('Stopping cron jobs...');
       cron.getTasks().forEach(task => task.stop());
       logger.info('✅ Cron jobs stopped');
+
+      await flushLeaderboard(this).catch(error => logger.warn('Rangliste flush on shutdown failed:', error.message));
 
       logger.info('Stopping music players...');
       await shutdownMusic(this);
