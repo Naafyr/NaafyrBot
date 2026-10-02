@@ -267,7 +267,8 @@ class TitanBot extends Client {
     cron.schedule('* * * * *', runSafeTask('giveaway_check', () => checkGiveaways(this)));
     cron.schedule('*/5 * * * *', runSafeTask('counter_update', () => this.updateAllCounters()));
     cron.schedule('* * * * *', runSafeTask('twitch_live_check', () => checkTwitchLive(this)));
-    cron.schedule('*/5 * * * *', runSafeTask('youtube_upload_check', () => checkYouTubeUploads(this)));
+    cron.schedule('0,30 9-16 * * 2,6', runSafeTask('youtube_upload_check', () => checkYouTubeUploads(this)), { timezone: 'Europe/Vienna' });
+    cron.schedule('0 17 * * 2,6', runSafeTask('youtube_upload_check_final', () => checkYouTubeUploads(this)), { timezone: 'Europe/Vienna' });
   }
 
   async updateAllCounters() {
