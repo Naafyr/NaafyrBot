@@ -3,7 +3,7 @@ import { logger } from '../utils/logger.js';
 import { Mutex } from '../utils/mutex.js';
 
 const TIME_ZONE = 'Europe/Vienna';
-const TOP_LIMIT = 10;
+const TOP_LIMIT = 5;
 const CHAT_COOLDOWN_MS = 10_000;
 
 export const LEADERBOARD_CHANNEL_NAMES = new Set(['🏆┃leaderboard', 'leaderboard']);
