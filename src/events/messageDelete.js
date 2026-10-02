@@ -15,10 +15,10 @@ export default {
       if (message.author?.bot) return;
 
       const metaLines = [
-        formatLogLine('Channel', message.channel ? `${message.channel.name} ${message.channel.toString()}` : 'Unknown'),
-        formatLogLine('Message ID', `\`${message.id}\``),
-        formatLogLine('Message author', message.author ? message.author.toString() : 'Unknown'),
-        formatLogLine('Message created', `<t:${Math.floor(message.createdTimestamp / 1000)}:R>`),
+        formatLogLine('Channel', message.channel ? `${message.channel.name} ${message.channel.toString()}` : 'Unbekannt'),
+        formatLogLine('Nachrichten-ID', `\`${message.id}\``),
+        formatLogLine('Autor', message.author ? message.author.toString() : 'Unbekannt'),
+        formatLogLine('Geschrieben', `<t:${Math.floor(message.createdTimestamp / 1000)}:R>`),
       ];
 
       let messageBody = null;
@@ -29,7 +29,7 @@ export default {
       }
 
       if (message.attachments.size > 0) {
-        metaLines.push(formatLogLine('Attachments', String(message.attachments.size)));
+        metaLines.push(formatLogLine('Anhänge', String(message.attachments.size)));
       }
 
       await logEvent({
@@ -37,10 +37,10 @@ export default {
         guildId: message.guild.id,
         eventType: EVENT_TYPES.MESSAGE_DELETE,
         data: {
-          title: 'Message deleted',
+          title: '❌ Nachricht gelöscht',
           lines: metaLines,
           quoted: true,
-          section: messageBody ? { title: 'Message', body: messageBody || '*(empty message)*' } : null,
+          section: messageBody ? { title: 'Nachricht', body: messageBody || '*(leere Nachricht)*' } : null,
           userId: message.author?.id,
           channelId: message.channel.id,
         }

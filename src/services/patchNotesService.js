@@ -152,29 +152,47 @@ function buildPatchButton(item) {
   );
 }
 
-// Neue Einträge seit dem zuletzt geposteten. Beim ersten Mal nur den neuesten.
-function newItemsSince(items, lastId) {
-  if (items.length === 0) return [];
-  if (!lastId) return [items[0]];
+const MAX_REMEMBERED_IDS = 50;
 
-  const index = items.findIndex(item => item.id === lastId);
-  const fresh = index === -1 ? items.slice(0, MAX_NEW_PER_CHECK) : items.slice(0, index);
-  return fresh.slice(0, MAX_NEW_PER_CHECK).reverse();
+// Gespeichert werden alle geposteten IDs + Datum des neuesten Posts. Gepostet wird nur, was neuer UND
+// noch nicht gepostet ist – so entstehen keine Doppelposts, wenn eine Quelle kurz eine veraltete Liste liefert.
+function readState(raw, items) {
+  if (raw && typeof raw === 'object') {
+    return { lastDate: Number(raw.lastDate) || 0, ids: new Set(raw.ids || []) };
+  }
+  if (typeof raw === 'string') {
+    // Altes Format (nur letzte ID): ab dem neuesten bekannten Eintrag weitermachen, nichts nachposten.
+    const known = items.find(item => item.id === raw);
+    return { lastDate: (known || items[0])?.date.getTime() || 0, ids: new Set([raw]) };
+  }
+  return null;
 }
 
-async function postForGuild(client, guild, gameKey, game, items) {
+export async function postForGuild(client, guild, gameKey, game, items) {
   const channel = guild.channels.cache.find(candidate =>
     candidate.type === ChannelType.GuildText && candidate.name === game.patch
   );
-  if (!channel) return 0;
+  if (!channel || items.length === 0) return 0;
 
   const key = stateKey(guild.id, gameKey);
-  const lastId = await client.db.get(key);
-  const fresh = newItemsSince(items, lastId);
+  const state = readState(await client.db.get(key), items);
+
+  // Erster Lauf: nur den neuesten Patch posten, damit der Channel nicht leer ist.
+  const fresh = state
+    ? items
+      .filter(item => !state.ids.has(item.id) && item.date.getTime() > state.lastDate)
+      .slice(0, MAX_NEW_PER_CHECK)
+      .reverse()
+    : [items[0]];
+
+  const ids = state?.ids || new Set();
+  let lastDate = state?.lastDate || 0;
 
   for (const item of fresh) {
     await channel.send({ embeds: [buildPatchEmbed(game, item)], components: [buildPatchButton(item)] });
-    await client.db.set(key, item.id);
+    ids.add(item.id);
+    lastDate = Math.max(lastDate, item.date.getTime());
+    await client.db.set(key, { lastDate, ids: [...ids].slice(-MAX_REMEMBERED_IDS) });
     logger.info('[PatchNotes] Posted', { guildId: guild.id, game: gameKey, title: item.title });
   }
 

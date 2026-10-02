@@ -283,8 +283,8 @@ function createLogEmbed(guild, eventType, data) {
 
     if (data.fields?.length) {
       const { before, after } = splitComparisonFields(data.fields);
-      if (before !== null) inlineFields.push({ name: 'Before', value: before, inline: true });
-      if (after !== null) inlineFields.push({ name: 'After', value: after, inline: true });
+      if (before !== null) inlineFields.push({ name: 'Vorher', value: before, inline: true });
+      if (after !== null) inlineFields.push({ name: 'Nachher', value: after, inline: true });
     }
   } else if (data.fields?.length) {
     const { before, after, rest } = splitComparisonFields(data.fields);
@@ -298,10 +298,10 @@ function createLogEmbed(guild, eventType, data) {
       });
 
       if (before !== null) {
-        inlineFields.push({ name: 'Before', value: before, inline: true });
+        inlineFields.push({ name: 'Vorher', value: before, inline: true });
       }
       if (after !== null) {
-        inlineFields.push({ name: 'After', value: after, inline: true });
+        inlineFields.push({ name: 'Nachher', value: after, inline: true });
       }
     } else {
       description = buildLogDescription({

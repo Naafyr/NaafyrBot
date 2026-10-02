@@ -83,7 +83,7 @@ export default {
                 guildId: guild.id,
                 eventType: EVENT_TYPES.MEMBER_LEAVE,
                 data: {
-                    title: 'User left',
+                    title: '👋 Mitglied hat den Server verlassen',
                     lines: [
                         `**User:** ${user.toString()} (${user.tag})`,
                         `**ID:** \`${user.id}\``,

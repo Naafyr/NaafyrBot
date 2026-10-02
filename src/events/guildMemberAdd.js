@@ -5,6 +5,7 @@ import { getWelcomeConfig } from '../utils/database.js';
 import { formatWelcomeMessage, getRandomWelcomeMessage } from '../utils/welcome.js';
 import { logEvent, EVENT_TYPES } from '../services/loggingService.js';
 import { scheduleGuildCounterUpdate } from '../services/serverstatsService.js';
+import { checkJoinSecurity } from '../services/moderationSetupService.js';
 import { setBirthday as dbSetBirthday } from '../utils/database.js';
 import { logger } from '../utils/logger.js';
 
@@ -104,6 +105,12 @@ export default {
         
         if (config?.verification?.enabled || config?.verification?.autoVerify?.enabled) {
             await handleVerification(member, guild, config.verification, member.client);
+        }
+
+        try {
+            await checkJoinSecurity(member);
+        } catch (error) {
+            logger.debug('Error in join security check:', error);
         }
 
         try {

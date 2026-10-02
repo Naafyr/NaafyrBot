@@ -38,13 +38,13 @@ function buildModerationLogData(event) {
     const reason = event.reason.length > 900
       ? `${event.reason.substring(0, 897)}...`
       : event.reason;
-    lines.push(formatLogLine('Reason', reason));
+    lines.push(formatLogLine('Grund', reason));
   }
   if (event.duration) {
-    lines.push(formatLogLine('Duration', event.duration));
+    lines.push(formatLogLine('Dauer', event.duration));
   }
   if (event.caseId) {
-    lines.push(formatLogLine('Case', `\`${event.caseId}\``));
+    lines.push(formatLogLine('Fall', `\`${event.caseId}\``));
   }
 
   const meta = [];

@@ -16,10 +16,10 @@ export default {
       if (oldMessage.content === newMessage.content) return;
 
       const metaLines = [
-        formatLogLine('Channel', newMessage.channel ? `${newMessage.channel.name} ${newMessage.channel.toString()}` : 'Unknown'),
-        formatLogLine('Message ID', `\`${newMessage.id}\``),
-        formatLogLine('Message author', newMessage.author ? newMessage.author.toString() : 'Unknown'),
-        formatLogLine('Message created', `<t:${Math.floor(newMessage.createdTimestamp / 1000)}:R>`),
+        formatLogLine('Channel', newMessage.channel ? `${newMessage.channel.name} ${newMessage.channel.toString()}` : 'Unbekannt'),
+        formatLogLine('Nachrichten-ID', `\`${newMessage.id}\``),
+        formatLogLine('Autor', newMessage.author ? newMessage.author.toString() : 'Unbekannt'),
+        formatLogLine('Geschrieben', `<t:${Math.floor(newMessage.createdTimestamp / 1000)}:R>`),
       ];
 
       const oldContent = oldMessage.content || '*(empty message)*';
@@ -36,7 +36,7 @@ export default {
         guildId: newMessage.guild.id,
         eventType: EVENT_TYPES.MESSAGE_EDIT,
         data: {
-          title: 'Message edited',
+          title: '✏️ Nachricht bearbeitet',
           lines: metaLines,
           quoted: true,
           fields: [
