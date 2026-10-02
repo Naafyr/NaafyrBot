@@ -5,11 +5,10 @@ import {
 } from 'discord.js';
 import {
   CATEGORIES,
-  buildLeaderboardEmbeds,
   ensureLeaderboardRoles,
   findLeaderboardChannel,
   flushLeaderboard,
-  saveLeaderboardMessage,
+  postLeaderboardMessages,
   syncLeaderboardRoles
 } from '../../services/leaderboardService.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
@@ -58,24 +57,8 @@ export default {
         await channel.permissionOverwrites.edit(verifiedRole.id, { SendMessages: false }).catch(() => {});
       }
 
-      const oldMessages = await channel.messages.fetch({ limit: 50 }).catch(() => null);
-      if (oldMessages) {
-        const titles = Object.values(CATEGORIES).map(config => config.title);
-        const oldPanels = oldMessages.filter(message =>
-          message.author.id === client.user.id &&
-          message.embeds.some(embed => titles.includes(embed.title) || embed.title?.startsWith('🏆 RANGLISTE'))
-        );
-        for (const message of oldPanels.values()) {
-          await message.delete().catch(() => {});
-        }
-      }
-
       await flushLeaderboard(client);
-
-      const message = await channel.send({
-        embeds: await buildLeaderboardEmbeds(client, guild)
-      });
-      await saveLeaderboardMessage(client, guild.id, message);
+      await postLeaderboardMessages(client, guild, channel);
       await syncLeaderboardRoles(client, guild);
 
       const lowRoles = Object.values(CATEGORIES)

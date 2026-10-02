@@ -202,48 +202,41 @@ async function topEntries(client, guildId, category, period) {
     .slice(0, TOP_LIMIT);
 }
 
-// Ein Embed pro Kategorie, Woche / Monat / All-Time als Spalten nebeneinander.
-export async function buildLeaderboardEmbeds(client, guild) {
-  const embeds = [];
-
-  for (const [category, config] of Object.entries(CATEGORIES)) {
-    const embed = new EmbedBuilder()
-      .setColor(config.color)
-      .setTitle(config.title);
-
-    const columns = [];
-    for (const period of Object.keys(PERIODS)) {
-      const entries = await topEntries(client, guild.id, category, period);
-      const lines = entries.map(([userId, value], index) =>
-        `${MEDALS[index] || `\`${index + 1}.\``} <@${userId}> · ${config.short(value)}`
-      );
-      columns.push({ period, lines: lines.length > 0 ? lines : ['*Noch leer*'] });
-    }
-
-    // Discord kennt keine Tabellenlinien → mit Rahmenzeichen nachbilden.
-    // Alle Spalten gleich lang auffüllen, damit die senkrechte Linie durchgeht.
-    const rows = Math.max(...columns.map(column => column.lines.length));
-
-    for (const [index, { period, lines }] of columns.entries()) {
-      const first = index === 0;
-      const padded = [...lines, ...Array(rows - lines.length).fill('​')];
-      const body = padded.map(line => (first ? line : `┃ ${line}`));
-
-      embed.addFields({
-        name: `${first ? '' : '┃ '}${PERIODS[period].emoji} ${PERIODS[period].label}`,
-        value: [first ? COLUMN_RULE : `╋${COLUMN_RULE}`, ...body].join('\n'),
-        inline: true
-      });
-    }
-
-    embeds.push(embed);
-  }
-
-  embeds.at(-1)
+// Eine eigene Nachricht pro Kategorie, Woche / Monat / All-Time als Spalten nebeneinander.
+export async function buildCategoryEmbed(client, guild, category) {
+  const config = CATEGORIES[category];
+  const embed = new EmbedBuilder()
+    .setColor(config.color)
+    .setTitle(config.title)
     .setFooter({ text: 'Aktualisiert alle 10 Minuten • Top 3 des Monats erhalten Rollen' })
     .setTimestamp();
 
-  return embeds;
+  const columns = [];
+  for (const period of Object.keys(PERIODS)) {
+    const entries = await topEntries(client, guild.id, category, period);
+    const lines = entries.map(([userId, value], index) =>
+      `${MEDALS[index] || `\`${index + 1}.\``} <@${userId}> · ${config.short(value)}`
+    );
+    columns.push({ period, lines: lines.length > 0 ? lines : ['*Noch leer*'] });
+  }
+
+  // Discord kennt keine Tabellenlinien → mit Rahmenzeichen nachbilden.
+  // Alle Spalten gleich lang auffüllen, damit die senkrechte Linie durchgeht.
+  const rows = Math.max(...columns.map(column => column.lines.length));
+
+  for (const [index, { period, lines }] of columns.entries()) {
+    const first = index === 0;
+    const padded = [...lines, ...Array(rows - lines.length).fill('​')];
+    const body = padded.map(line => (first ? line : `┃ ${line}`));
+
+    embed.addFields({
+      name: `${first ? '' : '┃ '}${PERIODS[period].emoji} ${PERIODS[period].label}`,
+      value: [first ? COLUMN_RULE : `╋${COLUMN_RULE}`, ...body].join('\n'),
+      inline: true
+    });
+  }
+
+  return embed;
 }
 
 export function findLeaderboardChannel(guild) {
@@ -252,28 +245,48 @@ export function findLeaderboardChannel(guild) {
   ) || null;
 }
 
-export async function saveLeaderboardMessage(client, guildId, message) {
-  await client.db.set(messageKey(guildId), { channelId: message.channelId, messageId: message.id });
+// Löscht alte Ranglisten-Nachrichten des Bots und postet Chat, Voice, Fotos neu (in dieser Reihenfolge).
+export async function postLeaderboardMessages(client, guild, channel) {
+  const titles = Object.values(CATEGORIES).map(config => config.title);
+  const recent = await channel.messages.fetch({ limit: 50 }).catch(() => null);
+  if (recent) {
+    const old = recent.filter(message =>
+      message.author.id === client.user.id &&
+      message.embeds.some(embed => titles.includes(embed.title) || embed.title?.startsWith('🏆 RANGLISTE'))
+    );
+    for (const message of old.values()) {
+      await message.delete().catch(() => {});
+    }
+  }
+
+  const messageIds = {};
+  for (const category of Object.keys(CATEGORIES)) {
+    const message = await channel.send({ embeds: [await buildCategoryEmbed(client, guild, category)] });
+    messageIds[category] = message.id;
+  }
+
+  await client.db.set(messageKey(guild.id), { channelId: channel.id, messageIds });
 }
 
-async function refreshMessage(client, guild, ref) {
+async function refreshMessages(client, guild, ref) {
   const channel = guild.channels.cache.get(ref.channelId);
   if (!channel) return;
 
-  const payload = {
-    embeds: await buildLeaderboardEmbeds(client, guild),
-    components: []
-  };
+  // Altes Format (eine Nachricht) oder fehlende Nachricht → alle drei neu posten, damit die Reihenfolge stimmt.
+  const messages = {};
+  for (const category of Object.keys(CATEGORIES)) {
+    const id = ref.messageIds?.[category];
+    messages[category] = id ? await channel.messages.fetch(id).catch(() => null) : null;
+  }
 
-  const message = await channel.messages.fetch(ref.messageId).catch(() => null);
-  if (message) {
-    await message.edit(payload);
+  if (Object.values(messages).some(message => !message)) {
+    await postLeaderboardMessages(client, guild, channel);
     return;
   }
 
-  // Nachricht wurde gelöscht → neu posten.
-  const created = await channel.send(payload);
-  await saveLeaderboardMessage(client, guild.id, created);
+  for (const [category, message] of Object.entries(messages)) {
+    await message.edit({ embeds: [await buildCategoryEmbed(client, guild, category)], components: [] });
+  }
 }
 
 // ---------- Rollen ----------
@@ -341,9 +354,9 @@ export async function updateLeaderboards(client) {
     try {
       // Nur Server, auf denen /rangliste setup ausgeführt wurde.
       const ref = await client.db.get(messageKey(guild.id));
-      if (!ref?.channelId || !ref?.messageId) continue;
+      if (!ref?.channelId) continue;
 
-      await refreshMessage(client, guild, ref);
+      await refreshMessages(client, guild, ref);
       await syncRoles(client, guild);
     } catch (error) {
       logger.error('[Rangliste] Update failed', { guildId: guild.id, error: error.message });
