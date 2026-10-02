@@ -63,29 +63,61 @@ export const GAMES = {
 };
 
 // Umgedrehte Benachrichtigung: Live/Videos/Shorts pingen @everyone.
-// Wer diese Rolle hat, sieht die Channels nicht und wird deshalb nicht gepingt.
-export const NO_PING = { name: 'Keine Stream-Pings', emoji: '🔕', aliases: [] };
-export const NO_PING_CHANNEL_NAMES = new Set(['🔴┃live', '📺┃neue-videos', '📱┃neue-shorts']);
+// Wer eine dieser Rollen hat, sieht die Channels nicht und wird deshalb nicht gepingt.
+export const NOTIFY_OPTIONS = {
+  nolive: {
+    name: 'Keine Live-Pings', emoji: '🔴', label: 'Stream-Start', aliases: [],
+    channels: new Set(['🔴┃live']),
+    offText: '🔕 **Stream-Start-Pings sind aus.** 🔴┃live ist für dich ausgeblendet.',
+    onText: '🔔 **Stream-Start-Pings sind wieder an.** 🔴┃live siehst du wieder.'
+  },
+  novideo: {
+    name: 'Keine Video-Pings', emoji: '📺', label: 'Neues Video', aliases: [],
+    channels: new Set(['📺┃neue-videos', '📱┃neue-shorts']),
+    offText: '🔕 **Video-Pings sind aus.** 📺┃neue-videos und 📱┃neue-shorts sind für dich ausgeblendet.',
+    onText: '🔔 **Video-Pings sind wieder an.** Neue Videos und Shorts siehst du wieder.'
+  }
+};
+const LEGACY_NO_PING_ROLE = 'Keine Stream-Pings';
 
-export async function ensureNoPingRole(guild) {
-  let role = findGameRole(guild, NO_PING);
+async function ensureNotifyRole(guild, option) {
+  let role = findGameRole(guild, option);
   if (!role) {
     role = await guild.roles.create({
-      name: NO_PING.name,
+      name: option.name,
       permissions: [],
       hoist: false,
       mentionable: false,
-      reason: 'NaafyrBot: Stream-Pings abwählen'
+      reason: 'NaafyrBot: Benachrichtigungen abwählen'
     });
   }
 
   for (const channel of guild.channels.cache.values()) {
-    if (channel.type === ChannelType.GuildText && NO_PING_CHANNEL_NAMES.has(channel.name)) {
-      await channel.permissionOverwrites.edit(role.id, { ViewChannel: false }, { reason: 'Keine Stream-Pings' });
+    if (channel.type === ChannelType.GuildText && option.channels.has(channel.name)) {
+      await channel.permissionOverwrites.edit(role.id, { ViewChannel: false }, { reason: option.name });
     }
   }
 
   return role;
+}
+
+// Legt beide Rollen an. Die alte Sammelrolle "Keine Stream-Pings" wird in beide neuen umgewandelt.
+export async function ensureNotifyRoles(guild) {
+  const roles = {};
+  for (const [key, option] of Object.entries(NOTIFY_OPTIONS)) {
+    roles[key] = await ensureNotifyRole(guild, option);
+  }
+
+  const legacy = guild.roles.cache.find(role => role.name === LEGACY_NO_PING_ROLE && !role.managed);
+  if (legacy) {
+    await guild.members.fetch().catch(() => null);
+    for (const member of legacy.members.values()) {
+      await member.roles.add(Object.values(roles), 'Umstellung auf getrennte Benachrichtigungen').catch(() => {});
+    }
+    await legacy.delete('Ersetzt durch Keine Live-Pings / Keine Video-Pings').catch(() => {});
+  }
+
+  return Object.values(roles);
 }
 
 export function findRoleSelectionChannel(guild) {
@@ -199,11 +231,36 @@ export function buildGamesEmbed() {
       '✨ **So geht’s**',
       '✅ Ein Klick → Rolle bekommen',
       '🔁 Nochmal klicken → Rolle wieder weg',
-      '🎲 Wähl so viele Games, wie du willst',
-      '',
-      '🔔 **Benachrichtigungen**',
-      'Bei Live-Streams, neuen Videos und Shorts wirst du automatisch gepingt. Keine Lust darauf? Mit **🔕 Keine Stream-Pings** blendest du diese Channels aus – und die Pings sind weg.'
+      '🎲 Wähl so viele Games, wie du willst'
     ].join('\n'));
+}
+
+export function buildNotifyEmbed() {
+  return new EmbedBuilder()
+    .setColor(0xF1C40F)
+    .setTitle('🎬 CONTENT')
+    .setDescription([
+      'Standardmäßig wirst du bei jedem Stream und jedem neuen Video benachrichtigt. 🔔',
+      '',
+      'Klick auf einen Button, wenn du dafür **nicht mehr** benachrichtigt werden willst:',
+      '',
+      '🔴 **Stream-Start** – keine Pings mehr, wenn Naafyr live geht',
+      '📺 **Neues Video** – keine Pings mehr bei neuen Videos & Shorts',
+      '',
+      '🔁 Nochmal klicken → Benachrichtigung wieder an'
+    ].join('\n'));
+}
+
+export function buildNotifyButtons() {
+  return [new ActionRowBuilder().addComponents(
+    Object.entries(NOTIFY_OPTIONS).map(([key, option]) =>
+      new ButtonBuilder()
+        .setCustomId(`rolle:${key}`)
+        .setLabel(option.label)
+        .setEmoji(option.emoji)
+        .setStyle(ButtonStyle.Secondary)
+    )
+  )];
 }
 
 export function buildGamesButtons() {
@@ -220,13 +277,5 @@ export function buildGamesButtons() {
   for (let index = 0; index < buttons.length; index += 5) {
     rows.push(new ActionRowBuilder().addComponents(buttons.slice(index, index + 5)));
   }
-
-  rows.push(new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId('rolle:noping')
-      .setLabel(NO_PING.name)
-      .setEmoji(NO_PING.emoji)
-      .setStyle(ButtonStyle.Danger)
-  ));
   return rows;
 }

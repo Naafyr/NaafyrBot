@@ -1,5 +1,5 @@
 import { EmbedBuilder, MessageFlags } from 'discord.js';
-import { GAMES, NO_PING, findGameRole } from '../../../services/roleSelectionService.js';
+import { GAMES, NOTIFY_OPTIONS, findGameRole } from '../../../services/roleSelectionService.js';
 import { logger } from '../../../utils/logger.js';
 
 function reply(interaction, color, text) {
@@ -10,11 +10,13 @@ function reply(interaction, color, text) {
 }
 
 // Rollen-Auswahl: Klick gibt die Rolle, erneuter Klick nimmt sie wieder weg.
+// Bei den Benachrichtigungen ist es umgekehrt: Rolle = Pings aus.
 export default {
   name: 'rolle',
   async execute(interaction, client, args) {
-    const isNoPing = args?.[0] === 'noping';
-    const option = isNoPing ? NO_PING : GAMES[args?.[0]];
+    const key = args?.[0];
+    const notify = NOTIFY_OPTIONS[key];
+    const option = notify || GAMES[key];
     const role = option ? findGameRole(interaction.guild, option) : null;
 
     if (!role) {
@@ -26,14 +28,14 @@ export default {
     try {
       if (member.roles.cache.has(role.id)) {
         await member.roles.remove(role, 'Rollen-Auswahl');
-        return isNoPing
-          ? reply(interaction, 0x57F287, '🔔 Stream-Pings sind wieder **an**. Live, neue Videos und Shorts siehst du wieder.')
+        return notify
+          ? reply(interaction, 0x57F287, notify.onText)
           : reply(interaction, 0x99AAB5, `➖ ${option.emoji} **${option.name}** wurde entfernt.`);
       }
 
       await member.roles.add(role, 'Rollen-Auswahl');
-      return isNoPing
-        ? reply(interaction, 0x99AAB5, '🔕 Stream-Pings sind **aus**. Live, neue Videos und Shorts sind für dich ausgeblendet. Nochmal klicken zum Rückgängig machen.')
+      return notify
+        ? reply(interaction, 0x99AAB5, `${notify.offText}\nNochmal klicken zum Rückgängig machen.`)
         : reply(interaction, 0x57F287, `✅ ${option.emoji} **${option.name}** ist jetzt deine Rolle. Viel Spaß beim Zocken! 🎮`);
     } catch (error) {
       logger.error('[Rollen-Auswahl] Role toggle failed', {
