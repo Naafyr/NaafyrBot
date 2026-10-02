@@ -24,7 +24,8 @@ class TitanBot extends Client {
       intents: [
         
         GatewayIntentBits.Guilds,                        
-        GatewayIntentBits.GuildMembers,                 
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildPresences,
 
         GatewayIntentBits.GuildMessages,                
         GatewayIntentBits.GuildMessageReactions,        
@@ -262,7 +263,7 @@ class TitanBot extends Client {
   setupCronJobs() {
     cron.schedule('0 6 * * *', runSafeTask('birthday_check', () => checkBirthdays(this)));
     cron.schedule('* * * * *', runSafeTask('giveaway_check', () => checkGiveaways(this)));
-    cron.schedule('*/15 * * * *', runSafeTask('counter_update', () => this.updateAllCounters()));
+    cron.schedule('*/5 * * * *', runSafeTask('counter_update', () => this.updateAllCounters()));
   }
 
   async updateAllCounters() {
