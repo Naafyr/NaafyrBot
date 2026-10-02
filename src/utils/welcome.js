@@ -8,9 +8,6 @@ const DEFAULT_TEMPLATES = {
 };
 
 const RANDOM_WELCOME_TEMPLATES = [
-    'Hey {user}, willkommen auf **{server}**! 👋',
-    '{user} ist jetzt auch am Start. Willkommen! 🎉',
-    'Da ist ja jemand Neues: {user}. Mach’s dir gemütlich.',
     '🎮 Ein neuer Spieler ist der Lobby beigetreten: {user}',
     '⚔️ Ein neuer Mitspieler wurde gefunden: {user}',
     '💾 Neuer Spielstand geladen: {user}',
@@ -37,8 +34,31 @@ const RANDOM_WELCOME_TEMPLATES = [
     '🚪 Die Tür war wohl nicht abgeschlossen. Willkommen {user}.',
     '🔍 Wir haben {user} gefunden. Keine Ahnung, wo.',
     '🌙 Etwas bewegt sich im Nebel… ach, nur {user}.',
-    '🌌 {user} ist aus irgendeinem Portal hier gelandet.'
-];
+    '🌌 {user} ist aus irgendeinem Portal hier gelandet.',
+    '🎯 Ziel erfasst: {user} ist angekommen.',
+    '🌀 Irgendwo hat sich ein Portal geöffnet… und {user} kam raus.',
+    '🎮 Lobby ist voller geworden: Willkommen {user}.',
+    '🧭 Neue Quest entdeckt: {user} kennenlernen.',
+    '🏕️ {user} hat offenbar beschlossen, hier sein Lager aufzuschlagen.',
+    '🧩 Ein neues Teil im Chaos: {user}.',
+    '🛎️ Ding Dong. Lieferung für den Server: {user}.',
+    '🗺️ {user} hat tatsächlich den Weg hierher gefunden. Respekt.',
+    '🎒 Inventar geprüft: {user} wurde hinzugefügt.',
+    '🕹️ Player joined: {user}. Hoffentlich kein NPC.',
+    '🔮 Die Prophezeiung war wahr. {user} ist da.',
+    '🐾 Irgendwas ist gespawnt… oh, {user}.',
+    '🎭 Neuer Charakter freigeschaltet: {user}.',
+    '📡 Signal empfangen. Herkunft unbekannt. Name: {user}.',
+    '🧨 Das kann entweder gut gehen oder sehr lustig werden. Willkommen {user}.',
+    '🧃 {user} ist da. Irgendwer holt bitte Snacks.',
+    '🪄 Beschwörung erfolgreich: {user} wurde dem Server hinzugefügt.',
+    '🛸 {user} ist gelandet. Keine Fragen stellen.',
+    '🧠 Neuer Gedanke im kollektiven Chaos: {user}.',
+    '🪑 Noch ein Platz weniger frei. Willkommen {user}.',
+    '🧭 Neuer Reisender entdeckt: {user} hat den Weg zu uns gefunden.',
+    '🎲 RNG war heute freundlich: {user} ist dem Server beigetreten.',
+    '🏰 Die Tore gehen auf – willkommen, {user}.'
+]
 
 function replaceAll(message, token, value) {
     if (value === undefined || value === null) {
