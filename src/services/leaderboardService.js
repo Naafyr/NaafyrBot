@@ -1,10 +1,4 @@
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  ChannelType,
-  EmbedBuilder
-} from 'discord.js';
+import { ChannelType, EmbedBuilder } from 'discord.js';
 import { logger } from '../utils/logger.js';
 import { Mutex } from '../utils/mutex.js';
 
@@ -21,26 +15,29 @@ const AFK_CHANNEL_NAMES = new Set(['😴┃afk', 'afk']);
 
 export const CATEGORIES = {
   chat: {
-    title: '💬 Chat',
-    format: value => `${value} ${value === 1 ? 'Nachricht' : 'Nachrichten'}`,
+    title: '💬 CHAT – Nachrichten',
+    color: 0x5865F2,
+    short: value => `${value}`,
     roles: ['Schreibkünstler', 'Aktiver Chatter', 'Tastaturkrieger']
   },
   voice: {
-    title: '🎙️ Voice',
-    format: formatMinutes,
+    title: '🎙️ VOICE – Zeit im Voice',
+    color: 0x57F287,
+    short: formatMinutesShort,
     roles: ['Sprechmeister', 'Voice-Veteran', 'Dauerredner']
   },
   photo: {
-    title: '📸 Fotos',
-    format: value => `${value} ${value === 1 ? 'Bild' : 'Bilder'}`,
+    title: '📸 FOTOS – Bilder',
+    color: 0xEB459E,
+    short: value => `${value}`,
     roles: ['Meisterfotograf', 'Fotograf', 'Schnappschütze']
   }
 };
 
 export const PERIODS = {
-  week: { label: 'Diese Woche', button: 'Woche', emoji: '📅' },
-  month: { label: 'Dieser Monat', button: 'Monat', emoji: '🗓️' },
-  all: { label: 'All-Time', button: 'All-Time', emoji: '♾️' }
+  week: { label: 'Woche', emoji: '📅' },
+  month: { label: 'Monat', emoji: '🗓️' },
+  all: { label: 'All-Time', emoji: '♾️' }
 };
 
 // Die Top-3-Rollen richten sich nach dem laufenden Monat.
@@ -83,12 +80,10 @@ function messageKey(guildId) {
   return `guild:${guildId}:rangliste:message`;
 }
 
-function formatMinutes(minutes) {
+function formatMinutesShort(minutes) {
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  if (hours > 0 && rest > 0) return `${hours} Std. ${rest} Min.`;
-  if (hours > 0) return `${hours} Std.`;
-  return `${rest} Min.`;
+  return hours > 0 ? `${hours}h ${String(rest).padStart(2, '0')}m` : `${rest}m`;
 }
 
 // ---------- Zählen (im Speicher, Flush einmal pro Minute) ----------
@@ -206,34 +201,35 @@ async function topEntries(client, guildId, category, period) {
     .slice(0, TOP_LIMIT);
 }
 
-export async function buildLeaderboardEmbed(client, guild, period) {
-  const embed = new EmbedBuilder()
-    .setColor(0xF1C40F)
-    .setTitle(`🏆 RANGLISTE – ${PERIODS[period].label}`)
+// Ein Embed pro Kategorie, Woche / Monat / All-Time als Spalten nebeneinander.
+export async function buildLeaderboardEmbeds(client, guild) {
+  const embeds = [];
+
+  for (const [category, config] of Object.entries(CATEGORIES)) {
+    const embed = new EmbedBuilder()
+      .setColor(config.color)
+      .setTitle(config.title);
+
+    for (const [period, periodConfig] of Object.entries(PERIODS)) {
+      const entries = await topEntries(client, guild.id, category, period);
+      const lines = entries.map(([userId, value], index) =>
+        `${MEDALS[index] || `\`${index + 1}.\``} <@${userId}> · ${config.short(value)}`
+      );
+      embed.addFields({
+        name: `${periodConfig.emoji} ${periodConfig.label}`,
+        value: lines.join('\n') || '*Noch leer*',
+        inline: true
+      });
+    }
+
+    embeds.push(embed);
+  }
+
+  embeds.at(-1)
     .setFooter({ text: 'Aktualisiert alle 10 Minuten • Top 3 des Monats erhalten Rollen' })
     .setTimestamp();
 
-  for (const [category, config] of Object.entries(CATEGORIES)) {
-    const entries = await topEntries(client, guild.id, category, period);
-    const lines = entries.map(([userId, value], index) =>
-      `${MEDALS[index] || `**${index + 1}.**`} <@${userId}> – ${config.format(value)}`
-    );
-    embed.addFields({ name: config.title, value: lines.join('\n') || '*Noch keine Einträge*' });
-  }
-
-  return embed;
-}
-
-export function buildPeriodButtons() {
-  return new ActionRowBuilder().addComponents(
-    Object.entries(PERIODS).map(([period, config]) =>
-      new ButtonBuilder()
-        .setCustomId(`rangliste:${period}`)
-        .setLabel(config.button)
-        .setEmoji(config.emoji)
-        .setStyle(ButtonStyle.Secondary)
-    )
-  );
+  return embeds;
 }
 
 export function findLeaderboardChannel(guild) {
@@ -251,8 +247,8 @@ async function refreshMessage(client, guild, ref) {
   if (!channel) return;
 
   const payload = {
-    embeds: [await buildLeaderboardEmbed(client, guild, 'week')],
-    components: [buildPeriodButtons()]
+    embeds: await buildLeaderboardEmbeds(client, guild),
+    components: []
   };
 
   const message = await channel.messages.fetch(ref.messageId).catch(() => null);

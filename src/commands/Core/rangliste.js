@@ -5,8 +5,7 @@ import {
 } from 'discord.js';
 import {
   CATEGORIES,
-  buildLeaderboardEmbed,
-  buildPeriodButtons,
+  buildLeaderboardEmbeds,
   ensureLeaderboardRoles,
   findLeaderboardChannel,
   flushLeaderboard,
@@ -61,9 +60,10 @@ export default {
 
       const oldMessages = await channel.messages.fetch({ limit: 50 }).catch(() => null);
       if (oldMessages) {
+        const titles = Object.values(CATEGORIES).map(config => config.title);
         const oldPanels = oldMessages.filter(message =>
           message.author.id === client.user.id &&
-          message.components.some(row => row.components.some(component => component.customId?.startsWith('rangliste:')))
+          message.embeds.some(embed => titles.includes(embed.title) || embed.title?.startsWith('🏆 RANGLISTE'))
         );
         for (const message of oldPanels.values()) {
           await message.delete().catch(() => {});
@@ -73,8 +73,7 @@ export default {
       await flushLeaderboard(client);
 
       const message = await channel.send({
-        embeds: [await buildLeaderboardEmbed(client, guild, 'week')],
-        components: [buildPeriodButtons()]
+        embeds: await buildLeaderboardEmbeds(client, guild)
       });
       await saveLeaderboardMessage(client, guild.id, message);
       await syncLeaderboardRoles(client, guild);
