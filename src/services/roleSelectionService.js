@@ -3,22 +3,63 @@ import {
   ButtonBuilder,
   ButtonStyle,
   ChannelType,
-  EmbedBuilder
+  EmbedBuilder,
+  PermissionFlagsBits
 } from 'discord.js';
 
 export const ROLE_SELECTION_CHANNEL_NAMES = new Set(['🎭┃rollen-auswahl', 'rollen-auswahl', 'rollen']);
+export const GAMES_CATEGORY_NAME = '──── 🎮 GAMES 🎮 ────';
+export const PATCHNOTES_CATEGORY_NAME = '──── 📰 PATCH-NOTES 📰 ────';
 
-// Reihenfolge = Reihenfolge der Buttons. Aliase: bestehende Rollen werden wiederverwendet statt doppelt angelegt.
+// Reihenfolge = Reihenfolge der Buttons und Channels.
+// aliases: bestehende Rollen werden wiederverwendet statt doppelt angelegt.
 export const GAMES = {
-  lol: { name: 'League of Legends', emoji: '⚔️', aliases: ['LoL', 'League'] },
-  hunt: { name: 'Hunt: Showdown', emoji: '🤠', aliases: ['Hunt', 'Hunt Showdown'] },
-  overwatch: { name: 'Overwatch 2', emoji: '🛡️', aliases: ['Overwatch'] },
-  dbd: { name: 'Dead by Daylight', emoji: '🔪', aliases: ['DbD', 'Dead By Daylight'] },
-  minecraft: { name: 'Minecraft', emoji: '⛏️', aliases: [] },
-  pubg: { name: 'PUBG', emoji: '🪂', aliases: ['PUBG: Battlegrounds', 'PlayerUnknown\'s Battlegrounds'] },
-  valorant: { name: 'Valorant', emoji: '🎯', aliases: ['VALORANT'] },
-  cs2: { name: 'Counter-Strike 2', emoji: '💣', aliases: ['CS2', 'CSGO', 'CS:GO', 'Counter-Strike'] },
-  apex: { name: 'Apex Legends', emoji: '🔺', aliases: ['Apex'] }
+  lol: {
+    name: 'League of Legends', emoji: '⚔️', color: 0xC89B3C, aliases: ['LoL', 'League'],
+    chat: '⚔️┃league-of-legends', patch: '⚔️┃lol-patchnotes',
+    source: { type: 'riot', page: 'https://www.leagueoflegends.com/de-de/news/tags/patch-notes/', urlMatch: /league-of-legends-patch-[\d-]+-notes/, label: 'Riot Games' }
+  },
+  hunt: {
+    name: 'Hunt: Showdown', emoji: '🤠', color: 0x8B1A1A, aliases: ['Hunt', 'Hunt Showdown'],
+    chat: '🤠┃hunt-showdown', patch: '🤠┃hunt-patchnotes',
+    source: { type: 'steam', appId: 594650, label: 'Steam' }
+  },
+  overwatch: {
+    name: 'Overwatch 2', emoji: '🛡️', color: 0xF99E1A, aliases: ['Overwatch'],
+    chat: '🛡️┃overwatch', patch: '🛡️┃overwatch-patchnotes',
+    source: { type: 'steam', appId: 2357570, label: 'Steam' }
+  },
+  dbd: {
+    name: 'Dead by Daylight', emoji: '🔪', color: 0x7A0A0A, aliases: ['DbD', 'Dead By Daylight'],
+    chat: '🔪┃dead-by-daylight', patch: '🔪┃dbd-patchnotes',
+    source: { type: 'steam', appId: 381210, label: 'Steam' }
+  },
+  minecraft: {
+    name: 'Minecraft', emoji: '⛏️', color: 0x62B47A, aliases: [],
+    chat: '⛏️┃minecraft', patch: '⛏️┃minecraft-patchnotes',
+    source: { type: 'mojang', label: 'Mojang' }
+  },
+  pubg: {
+    name: 'PUBG', emoji: '🪂', color: 0xF2A900, aliases: ['PUBG: Battlegrounds', 'PlayerUnknown\'s Battlegrounds'],
+    chat: '🪂┃pubg', patch: '🪂┃pubg-patchnotes',
+    // PUBG postet sehr viele E-Sport-News → nur echte "Patch Notes".
+    source: { type: 'steam', appId: 578080, titleMatch: /patch notes/i, label: 'Steam' }
+  },
+  valorant: {
+    name: 'Valorant', emoji: '🎯', color: 0xFF4655, aliases: ['VALORANT'],
+    chat: '🎯┃valorant', patch: '🎯┃valorant-patchnotes',
+    source: { type: 'riot', page: 'https://playvalorant.com/de-de/news/tags/patch-notes/', urlMatch: /valorant-patch-notes-[\d-]+/, label: 'Riot Games' }
+  },
+  cs2: {
+    name: 'CS2', emoji: '💣', color: 0xDE9B35, aliases: ['Counter-Strike 2', 'CSGO', 'CS:GO', 'Counter-Strike'],
+    chat: '💣┃cs2', patch: '💣┃cs2-patchnotes',
+    source: { type: 'steam', appId: 730, label: 'Steam' }
+  },
+  apex: {
+    name: 'Apex Legends', emoji: '🔺', color: 0xDA292A, aliases: ['Apex'],
+    chat: '🔺┃apex-legends', patch: '🔺┃apex-patchnotes',
+    source: { type: 'steam', appId: 1172470, label: 'Steam' }
+  }
 };
 
 export function findRoleSelectionChannel(guild) {
@@ -40,12 +81,79 @@ export async function ensureGameRoles(guild) {
       name: game.name,
       permissions: [],
       hoist: false,
-      // Erwähnbar, damit man z. B. mit @Valorant Mitspieler suchen kann.
-      mentionable: true,
+      mentionable: false,
       reason: 'NaafyrBot Rollen-Auswahl'
     });
     created.push(game.name);
   }
+  return created;
+}
+
+async function getOrCreateCategory(guild, name) {
+  const existing = guild.channels.cache.find(channel => channel.type === ChannelType.GuildCategory && channel.name === name);
+  if (existing) return existing;
+
+  return guild.channels.create({
+    name,
+    type: ChannelType.GuildCategory,
+    permissionOverwrites: [{ id: guild.id, deny: [PermissionFlagsBits.ViewChannel] }],
+    reason: 'NaafyrBot Game-Channels'
+  });
+}
+
+// Sichtbar nur mit der Game-Rolle. Patch-Notes-Channels sind schreibgeschützt.
+function gameOverwrites(guild, role, { readOnly }) {
+  return [
+    { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+    {
+      id: role.id,
+      allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory],
+      ...(readOnly
+        ? { deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.CreatePublicThreads, PermissionFlagsBits.AddReactions] }
+        : { allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.SendMessages] })
+    },
+    {
+      id: guild.members.me.id,
+      allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks]
+    }
+  ];
+}
+
+async function getOrCreateGameChannel(guild, name, parent, role, options) {
+  const existing = guild.channels.cache.find(channel => channel.type === ChannelType.GuildText && channel.name === name);
+  if (existing) {
+    if (existing.parentId !== parent.id) {
+      await existing.setParent(parent.id, { lockPermissions: false });
+    }
+    await existing.permissionOverwrites.set(gameOverwrites(guild, role, options));
+    return { channel: existing, created: false };
+  }
+
+  const channel = await guild.channels.create({
+    name,
+    type: ChannelType.GuildText,
+    parent: parent.id,
+    topic: options.readOnly ? 'Automatische Patch Notes' : undefined,
+    permissionOverwrites: gameOverwrites(guild, role, options),
+    reason: 'NaafyrBot Game-Channels'
+  });
+  return { channel, created: true };
+}
+
+export async function ensureGameChannels(guild) {
+  const gamesCategory = await getOrCreateCategory(guild, GAMES_CATEGORY_NAME);
+  const patchCategory = await getOrCreateCategory(guild, PATCHNOTES_CATEGORY_NAME);
+  let created = 0;
+
+  for (const game of Object.values(GAMES)) {
+    const role = findGameRole(guild, game);
+    if (!role) continue;
+
+    const chat = await getOrCreateGameChannel(guild, game.chat, gamesCategory, role, { readOnly: false });
+    const patch = await getOrCreateGameChannel(guild, game.patch, patchCategory, role, { readOnly: true });
+    created += Number(chat.created) + Number(patch.created);
+  }
+
   return created;
 }
 
@@ -58,18 +166,15 @@ export function buildGamesEmbed() {
     .setDescription([
       'Zeig der Community, was bei dir gerade läuft! 🕹️',
       '',
-      'Klick unten auf deine Games und schnapp dir die passende Rolle. So findest du in Sekunden Mitspieler – und die anderen finden dich. 🤝',
+      'Klick unten auf deine Games und schnapp dir die passende Rolle. Damit schaltest du den **Game-Chat** und die **Patch Notes** für dein Game frei. 📰',
       '',
       list,
       '',
       '✨ **So geht’s**',
       '✅ Ein Klick → Rolle bekommen',
       '🔁 Nochmal klicken → Rolle wieder weg',
-      '🎲 Wähl so viele Games, wie du willst',
-      '',
-      '📣 Tipp: Mit **@Spielname** pingst du alle, die das Game auch zocken – perfekt, wenn du eine Runde suchst!'
-    ].join('\n'))
-    .setFooter({ text: 'Fehlt dein Game? Sag einfach Bescheid! 💬' });
+      '🎲 Wähl so viele Games, wie du willst'
+    ].join('\n'));
 }
 
 export function buildGamesButtons() {

@@ -11,6 +11,7 @@ import { getServerCounters, saveServerCounters, updateCounter, getGuildCounterSt
 import { checkTwitchLive } from './services/twitchLiveService.js';
 import { checkYouTubeUploads } from './services/youtubeUploadService.js';
 import { trackVoiceMinute, flushLeaderboard, updateLeaderboards } from './services/leaderboardService.js';
+import { checkPatchNotes } from './services/patchNotesService.js';
 import { logger, startupLog, shutdownLog } from './utils/logger.js';
 import { checkBirthdays } from './services/birthdayService.js';
 import { checkGiveaways } from './services/giveawayService.js';
@@ -275,6 +276,7 @@ class TitanBot extends Client {
       await flushLeaderboard(this);
     }));
     cron.schedule('*/10 * * * *', runSafeTask('rangliste_update', () => updateLeaderboards(this)), { timezone: 'Europe/Vienna' });
+    cron.schedule('5,35 * * * *', runSafeTask('patchnotes_check', () => checkPatchNotes(this)));
   }
 
   async updateAllCounters() {

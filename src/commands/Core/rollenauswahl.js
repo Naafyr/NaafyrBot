@@ -7,10 +7,12 @@ import {
   GAMES,
   buildGamesButtons,
   buildGamesEmbed,
+  ensureGameChannels,
   ensureGameRoles,
   findGameRole,
   findRoleSelectionChannel
 } from '../../services/roleSelectionService.js';
+import { checkPatchNotes } from '../../services/patchNotesService.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
 import { replyUserError, ErrorTypes } from '../../utils/errorHandler.js';
 import { logger } from '../../utils/logger.js';
@@ -50,6 +52,7 @@ export default {
       }
 
       const createdRoles = await ensureGameRoles(guild);
+      const createdChannels = await ensureGameChannels(guild);
 
       // Auswahl-Channel ist nur zum Klicken, nicht zum Schreiben.
       const verifiedRole = guild.roles.cache.find(role => role.name.toLowerCase() === 'verifiziert' && !role.managed);
@@ -77,13 +80,20 @@ export default {
 
       const lines = [
         '✅ **Rollen-Auswahl eingerichtet** in **🎭┃rollen-auswahl**.',
-        createdRoles.length > 0 ? `Neue Rollen: ${createdRoles.join(', ')}` : 'Alle Game-Rollen waren schon vorhanden.'
+        createdRoles.length > 0 ? `Neue Rollen: ${createdRoles.join(', ')}` : 'Alle Game-Rollen waren schon vorhanden.',
+        `Game-Chats & Patch-Notes-Channels: ${createdChannels} neu angelegt, sichtbar nur mit der jeweiligen Rolle.`,
+        '📰 Die neuesten Patch Notes werden gerade gepostet, danach wird alle 30 Minuten geprüft.'
       ];
       if (blocked.length > 0) {
         lines.push(`⚠️ Diese Rollen stehen über der Bot-Rolle und können nicht vergeben werden: ${blocked.join(', ')}`);
       }
 
-      return await InteractionHelper.safeEditReply(interaction, { content: lines.join('\n') });
+      await InteractionHelper.safeEditReply(interaction, { content: lines.join('\n') });
+
+      checkPatchNotes(client).catch(error => {
+        logger.error('[Rollen-Auswahl] Initial patch notes check failed', { error: error.message });
+      });
+      return;
     } catch (error) {
       logger.error('[Rollen-Auswahl] Setup failed', { guildId: interaction.guildId, error: error.message, stack: error.stack });
       return await replyUserError(interaction, {
