@@ -44,6 +44,7 @@ export default {
                     : `Willkommen auf ${guild.name}!`;
 
                 const canEmbed = permissions.has(PermissionFlagsBits.EmbedLinks);
+                const randomEmbedColor = Math.floor(Math.random() * 0xFFFFFF);
 
                 if (!canEmbed) {
                     await channel.send({
@@ -51,9 +52,10 @@ export default {
                     });
                 } else {
                     const embed = new EmbedBuilder()
-                        .setColor(welcomeConfig.welcomeEmbed?.color || getColor('success'))
+                        .setColor(randomEmbedColor)
                         .setTitle(embedTitle)
                         .setDescription([
+                            '',
                             welcomeMessage,
                             '',
                             `🐺 **Rudel #${guild.memberCount}**`
