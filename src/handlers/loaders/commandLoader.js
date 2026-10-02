@@ -51,7 +51,8 @@ async function getAllFiles(directory, fileList = []) {
     return fileList;
 }
 
-export async function loadCommands(client) {
+export async function loadCommands(client, options = {}) {
+    const { bustCache = false } = options;
     client.commands = new Collection();
     const commandsPath = path.join(__dirname, '../../commands');
     const commandFiles = await getAllFiles(commandsPath);
@@ -68,7 +69,11 @@ export async function loadCommands(client) {
             const commandDir = path.dirname(filePath);
             const category = path.basename(commandDir);
             
-            const commandModule = await import(`file://${filePath}`);
+            const moduleUrl = pathToFileURL(filePath);
+            if (bustCache) {
+                moduleUrl.searchParams.set('t', Date.now().toString());
+            }
+            const commandModule = await import(moduleUrl.href);
             const command = commandModule.default || commandModule;
             
             if (!command.data || !command.execute) {
