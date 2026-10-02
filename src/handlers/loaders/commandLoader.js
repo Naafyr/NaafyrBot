@@ -280,6 +280,47 @@ export async function registerCommands(client, options = {}) {
     }
 }
 
+export async function registerGuildRefreshCommand(client, guildId, options = {}) {
+    const { clientId = null } = options;
+
+    if (!clientId) {
+        throw new Error('CLIENT_ID is required for guild command registration');
+    }
+    if (!guildId) {
+        throw new Error('guildId is required for guild command registration');
+    }
+    if (!client.rest) {
+        throw new Error('Discord REST client is not available for slash command registration');
+    }
+
+    const refreshCommand = client.commands.get('refresh');
+    if (!refreshCommand?.data || typeof refreshCommand.data.toJSON !== 'function') {
+        throw new Error('Refresh command is not loaded');
+    }
+
+    const route = `/applications/${clientId}/guilds/${guildId}/commands`;
+    const existing = await client.rest.get(route);
+    const refreshPayload = refreshCommand.data.toJSON();
+
+    const merged = [
+        ...existing.filter(command => command.name !== 'refresh').map(command => ({
+            name: command.name,
+            description: command.description,
+            type: command.type,
+            options: command.options,
+            default_member_permissions: command.default_member_permissions,
+            dm_permission: command.dm_permission,
+            nsfw: command.nsfw,
+            integration_types: command.integration_types,
+            contexts: command.contexts
+        })),
+        refreshPayload
+    ];
+
+    await client.rest.put(route, { body: merged });
+    logger.info(`Registered /refresh immediately for guild ${guildId}`);
+}
+
 export async function reloadCommand(client, commandName) {
     const command = client.commands.get(commandName);
     
