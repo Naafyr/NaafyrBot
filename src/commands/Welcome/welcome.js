@@ -176,10 +176,11 @@ export default {
                 .setColor(0xB84DFF)
                 .setTitle('📜 SERVER-REGELN')
                 .setDescription(
-                    'Willkommen auf **' + guild.name + '**!\n\n' +
+                    'Willkommen auf **' + guild.name + '**! 👋\n' +
+                    'Bitte lies dir die Regeln kurz durch, bevor du dich verifizierst.\n\n' +
                     RULES_TEXT +
                     '\n\n✅ **VERIFIZIERUNG**\n' +
-                    'Mit einem Klick auf den Button bestätigst du, dass du die Regeln gelesen hast und akzeptierst. ' +
+                    'Mit einem Klick auf **✅ Verifizieren** bestätigst du, dass du die Regeln gelesen hast und akzeptierst.\n\n' +
                     'Danach erhältst du Zugriff auf die normalen Server-Channels.'
                 );
 
