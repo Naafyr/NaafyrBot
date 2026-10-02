@@ -139,6 +139,12 @@ function collectCommandPayloads(client) {
         const commandName = command.data.name;
         logger.debug(`Processing command for registration: ${commandName}`);
 
+        // /refresh is intentionally guild-only so it appears immediately and only once.
+        if (commandName === 'refresh') {
+            logger.debug('Skipping /refresh in global registration; it is registered per guild');
+            continue;
+        }
+
         if (registeredNames.has(commandName)) {
             logger.debug(`Skipping duplicate command: ${commandName}`);
             continue;
