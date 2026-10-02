@@ -30,9 +30,9 @@ async function getOrCreateVerifiedRole(guild) {
     return role;
 }
 
-async function getOrCreateTextChannel(guild, name, topic) {
+async function getOrCreateTextChannel(guild, name, topic, aliases = []) {
     let channel = guild.channels.cache.find(
-        c => c.type === ChannelType.GuildText && c.name === name
+        c => c.type === ChannelType.GuildText && (c.name === name || aliases.includes(c.name))
     );
 
     if (!channel) {
@@ -42,6 +42,23 @@ async function getOrCreateTextChannel(guild, name, topic) {
             topic,
             reason: 'NaafyrBot new welcome setup'
         });
+    } else {
+        const updates = {};
+
+        if (channel.name !== name) {
+            updates.name = name;
+        }
+
+        if (channel.topic !== topic) {
+            updates.topic = topic;
+        }
+
+        if (Object.keys(updates).length > 0) {
+            await channel.edit({
+                ...updates,
+                reason: 'NaafyrBot welcome channel style update'
+            });
+        }
     }
 
     return channel;
@@ -184,14 +201,16 @@ export default {
 
             const welcomeChannel = await getOrCreateTextChannel(
                 guild,
-                'willkommen',
-                'Willkommen auf dem Server'
+                '👋┃willkommen',
+                'Willkommen auf dem Server',
+                ['willkommen']
             );
 
             const rulesChannel = await getOrCreateTextChannel(
                 guild,
-                'regeln',
-                'Regeln lesen und verifizieren'
+                '📜┃regeln',
+                'Regeln lesen und verifizieren',
+                ['regeln']
             );
 
             await applyVisibility(
