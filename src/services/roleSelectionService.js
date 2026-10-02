@@ -62,6 +62,32 @@ export const GAMES = {
   }
 };
 
+// Umgedrehte Benachrichtigung: Live/Videos/Shorts pingen @everyone.
+// Wer diese Rolle hat, sieht die Channels nicht und wird deshalb nicht gepingt.
+export const NO_PING = { name: 'Keine Stream-Pings', emoji: '🔕', aliases: [] };
+export const NO_PING_CHANNEL_NAMES = new Set(['🔴┃live', '📺┃neue-videos', '📱┃neue-shorts']);
+
+export async function ensureNoPingRole(guild) {
+  let role = findGameRole(guild, NO_PING);
+  if (!role) {
+    role = await guild.roles.create({
+      name: NO_PING.name,
+      permissions: [],
+      hoist: false,
+      mentionable: false,
+      reason: 'NaafyrBot: Stream-Pings abwählen'
+    });
+  }
+
+  for (const channel of guild.channels.cache.values()) {
+    if (channel.type === ChannelType.GuildText && NO_PING_CHANNEL_NAMES.has(channel.name)) {
+      await channel.permissionOverwrites.edit(role.id, { ViewChannel: false }, { reason: 'Keine Stream-Pings' });
+    }
+  }
+
+  return role;
+}
+
 export function findRoleSelectionChannel(guild) {
   return guild.channels.cache.find(channel =>
     channel.type === ChannelType.GuildText && ROLE_SELECTION_CHANNEL_NAMES.has(channel.name)
@@ -173,7 +199,10 @@ export function buildGamesEmbed() {
       '✨ **So geht’s**',
       '✅ Ein Klick → Rolle bekommen',
       '🔁 Nochmal klicken → Rolle wieder weg',
-      '🎲 Wähl so viele Games, wie du willst'
+      '🎲 Wähl so viele Games, wie du willst',
+      '',
+      '🔔 **Benachrichtigungen**',
+      'Bei Live-Streams, neuen Videos und Shorts wirst du automatisch gepingt. Keine Lust darauf? Mit **🔕 Keine Stream-Pings** blendest du diese Channels aus – und die Pings sind weg.'
     ].join('\n'));
 }
 
@@ -191,5 +220,13 @@ export function buildGamesButtons() {
   for (let index = 0; index < buttons.length; index += 5) {
     rows.push(new ActionRowBuilder().addComponents(buttons.slice(index, index + 5)));
   }
+
+  rows.push(new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('rolle:noping')
+      .setLabel(NO_PING.name)
+      .setEmoji(NO_PING.emoji)
+      .setStyle(ButtonStyle.Danger)
+  ));
   return rows;
 }

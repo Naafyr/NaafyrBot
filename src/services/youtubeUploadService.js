@@ -169,12 +169,22 @@ const UPLOAD_TYPES = {
   video: {
     channelNames: new Set(['📺┃neue-videos', 'neue-videos', 'videos']),
     stateKey: guildId => `guild:${guildId}:youtube:lastVideoId`,
-    build: video => ({ embeds: [buildVideoEmbed(video)], components: [buildButton('Video ansehen', video.url)] })
+    build: video => ({
+      content: '@everyone 📺 **Neues Video ist online!**',
+      allowedMentions: { parse: ['everyone'] },
+      embeds: [buildVideoEmbed(video)],
+      components: [buildButton('Video ansehen', video.url)]
+    })
   },
   short: {
     channelNames: new Set(['📱┃neue-shorts', 'neue-shorts', 'shorts']),
     stateKey: guildId => `guild:${guildId}:youtube:lastShortId`,
-    build: short => ({ embeds: [buildShortEmbed(short)], components: [buildButton('Short ansehen', short.url)] })
+    build: short => ({
+      content: '@everyone 📱 **Neuer Short ist online!**',
+      allowedMentions: { parse: ['everyone'] },
+      embeds: [buildShortEmbed(short)],
+      components: [buildButton('Short ansehen', short.url)]
+    })
   }
 };
 

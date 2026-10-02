@@ -119,8 +119,9 @@ function hasSpecialRoleGate(channel, guild) {
         if (overwrite.id === guild.id) return false;
         if (overwrite.type !== 0) return false;
 
-        return overwrite.allow.has(PermissionFlagsBits.ViewChannel)
-            || overwrite.deny.has(PermissionFlagsBits.ViewChannel);
+        // Nur Rollen MIT Zugang (z. B. Game-Rollen) machen einen Channel "role-gated".
+        // Ein reines Verbot (z. B. "Keine Stream-Pings") darf Verifizierten den Channel nicht wegnehmen.
+        return overwrite.allow.has(PermissionFlagsBits.ViewChannel);
     });
 }
 

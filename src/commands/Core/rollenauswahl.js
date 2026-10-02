@@ -9,6 +9,7 @@ import {
   buildGamesEmbed,
   ensureGameChannels,
   ensureGameRoles,
+  ensureNoPingRole,
   findGameRole,
   findRoleSelectionChannel
 } from '../../services/roleSelectionService.js';
@@ -53,6 +54,7 @@ export default {
 
       const createdRoles = await ensureGameRoles(guild);
       const createdChannels = await ensureGameChannels(guild);
+      const noPingRole = await ensureNoPingRole(guild);
 
       // Auswahl-Channel ist nur zum Klicken, nicht zum Schreiben.
       const verifiedRole = guild.roles.cache.find(role => role.name.toLowerCase() === 'verifiziert' && !role.managed);
@@ -73,8 +75,7 @@ export default {
 
       await channel.send({ embeds: [buildGamesEmbed()], components: buildGamesButtons() });
 
-      const blocked = Object.values(GAMES)
-        .map(game => findGameRole(guild, game))
+      const blocked = [...Object.values(GAMES).map(game => findGameRole(guild, game)), noPingRole]
         .filter(role => role && role.position >= botMember.roles.highest.position)
         .map(role => role.name);
 
@@ -82,8 +83,12 @@ export default {
         '✅ **Rollen-Auswahl eingerichtet** in **🎭┃rollen-auswahl**.',
         createdRoles.length > 0 ? `Neue Rollen: ${createdRoles.join(', ')}` : 'Alle Game-Rollen waren schon vorhanden.',
         `Game-Chats & Patch-Notes-Channels: ${createdChannels} neu angelegt, sichtbar nur mit der jeweiligen Rolle.`,
-        '📰 Die neuesten Patch Notes werden gerade gepostet, danach wird alle 30 Minuten geprüft.'
+        '📰 Die neuesten Patch Notes werden gerade gepostet, danach wird alle 30 Minuten geprüft.',
+        '🔕 Rolle **Keine Stream-Pings** blendet 🔴┃live, 📺┃neue-videos und 📱┃neue-shorts aus.'
       ];
+      if (!botMember.permissions.has(PermissionFlagsBits.MentionEveryone)) {
+        lines.push('⚠️ Dem Bot fehlt **@everyone erwähnen** – ohne die Berechtigung kommen keine Stream-Pings an.');
+      }
       if (blocked.length > 0) {
         lines.push(`⚠️ Diese Rollen stehen über der Bot-Rolle und können nicht vergeben werden: ${blocked.join(', ')}`);
       }

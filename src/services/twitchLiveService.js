@@ -16,7 +16,7 @@ const ACTIVE_FOOTER = 'Twitch • LIVE';
 let cachedToken = null;
 let cachedTokenExpiresAt = 0;
 
-function getTwitchConfig() {
+export function getTwitchConfig() {
   const clientId = process.env.TWITCH_CLIENT_ID?.trim();
   const clientSecret = process.env.TWITCH_CLIENT_SECRET?.trim();
   const channel = process.env.TWITCH_CHANNEL?.trim().toLowerCase();
@@ -54,7 +54,7 @@ async function getAppAccessToken(config) {
   return cachedToken;
 }
 
-async function twitchGet(config, path, params = {}) {
+export async function twitchGet(config, path, params = {}) {
   const token = await getAppAccessToken(config);
 
   try {
@@ -247,7 +247,10 @@ async function handleGuild(client, guild, stream, config) {
       });
     }
 
+    // Pingt alle, die den Channel sehen. Wer "Keine Stream-Pings" hat, sieht ihn nicht.
     await channel.send({
+      content: '@everyone 🔴 **Naafyr ist jetzt live – komm vorbei!**',
+      allowedMentions: { parse: ['everyone'] },
       embeds: [buildLiveEmbed(stream, config.channel)],
       components: [buildStreamButton(config.channel)]
     });
