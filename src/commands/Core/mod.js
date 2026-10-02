@@ -7,6 +7,7 @@ import { configureLogging, ensureAutoModRules, ensureModLogChannel } from '../..
 import { InteractionHelper } from '../../utils/interactionHelper.js';
 import { replyUserError, ErrorTypes } from '../../utils/errorHandler.js';
 import { logger } from '../../utils/logger.js';
+import { sortCategories } from '../../utils/categoryOrder.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -35,6 +36,7 @@ export default {
       const channel = await ensureModLogChannel(guild);
       await configureLogging(client, guild.id, channel.id);
       const { results, canTimeout } = await ensureAutoModRules(guild, channel.id);
+      await sortCategories(guild);
 
       const lines = [
         `✅ **Moderation eingerichtet** in ${channel} (nur für Admins sichtbar).`,

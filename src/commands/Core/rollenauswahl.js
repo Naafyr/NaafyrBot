@@ -19,6 +19,7 @@ import { checkPatchNotes } from '../../services/patchNotesService.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
 import { replyUserError, ErrorTypes } from '../../utils/errorHandler.js';
 import { logger } from '../../utils/logger.js';
+import { sortCategories } from '../../utils/categoryOrder.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -96,6 +97,7 @@ export default {
         lines.push(`⚠️ Diese Rollen stehen über der Bot-Rolle und können nicht vergeben werden: ${blocked.join(', ')}`);
       }
 
+      await sortCategories(guild);
       await InteractionHelper.safeEditReply(interaction, { content: lines.join('\n') });
 
       checkPatchNotes(client).catch(error => {

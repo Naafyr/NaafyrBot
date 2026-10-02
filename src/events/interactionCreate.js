@@ -163,6 +163,18 @@ export default {
               subtype: COMMAND_ERROR_SUBTYPES[interaction.commandName] || error?.context?.subtype,
             }, interactionTraceContext));
           }
+        } else if (interaction.isMessageContextMenuCommand()) {
+          // Rechtsklick → Apps (z. B. "Als Zitat speichern")
+          const command = client.commands.get(interaction.commandName);
+          if (!command) return;
+          try {
+            await command.execute(interaction, null, client);
+          } catch (error) {
+            await handleInteractionError(interaction, error, withTraceContext({
+              type: 'context_menu',
+              commandName: interaction.commandName
+            }, interactionTraceContext));
+          }
         } else if (interaction.isAutocomplete()) {
           const autocompleteCommand = client.commands.get(interaction.commandName);
           if (autocompleteCommand?.autocomplete) {

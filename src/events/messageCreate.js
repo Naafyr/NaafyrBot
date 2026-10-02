@@ -10,6 +10,7 @@ import { enforceAbuseProtection, formatCooldownDuration } from '../utils/abusePr
 import { createEmbed } from '../utils/embeds.js';
 import { isCommandEnabled } from '../services/commandAccessService.js';
 import { trackMessage } from '../services/leaderboardService.js';
+import { handleSuggestion } from '../services/suggestionService.js';
 
 export default {
   name: Events.MessageCreate,
@@ -20,6 +21,7 @@ export default {
       logger.debug(`Message received from ${message.author.tag}: ${message.content}`);
 
       trackMessage(message);
+      await handleSuggestion(message);
 
       await handlePrefixCommand(message, client);
     } catch (error) {

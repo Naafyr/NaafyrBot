@@ -1,6 +1,15 @@
-import { ChannelType, PermissionFlagsBits } from 'discord.js';
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ChannelType,
+  EmbedBuilder,
+  PermissionFlagsBits,
+  StringSelectMenuBuilder
+} from 'discord.js';
 import { logger } from '../utils/logger.js';
 import { Mutex } from '../utils/mutex.js';
+import { GAMES } from './roleSelectionService.js';
 
 const PUBLIC_TRIGGER_NAMES = new Set(['➕┃channel-erstellen', 'channel-erstellen']);
 const PRIVATE_TRIGGER_NAMES = new Set(['🔒┃privaten-channel-erstellen', 'privaten-channel-erstellen', 'premium-channel-erstellen']);
@@ -80,9 +89,85 @@ function botOverwrite(guild) {
       PermissionFlagsBits.ViewChannel,
       PermissionFlagsBits.Connect,
       PermissionFlagsBits.ManageChannels,
-      PermissionFlagsBits.MoveMembers
+      PermissionFlagsBits.MoveMembers,
+      // Für die Steuerungs-Box im Raum-Chat
+      PermissionFlagsBits.SendMessages,
+      PermissionFlagsBits.EmbedLinks,
+      PermissionFlagsBits.ReadMessageHistory
     ]
   };
+}
+
+// ---------- Raum-Steuerung (Box im Chat des Voice-Raums) ----------
+
+export async function getRoomRecord(client, guildId, roomId) {
+  return (await loadRooms(client, guildId))[roomId] || null;
+}
+
+export function buildControlPanel(record) {
+  const embed = new EmbedBuilder()
+    .setColor(0x5865F2)
+    .setTitle('🎛️ RAUM-STEUERUNG')
+    .setDescription([
+      `👑 Owner: <@${record.ownerId}> – nur der Owner kann die Steuerung benutzen.`,
+      '',
+      '🎮 **Spiel wählen** – Raumname wird zum Spiel',
+      '✏️ **Umbenennen** – eigener Name',
+      '👥 **Limit** – maximale Anzahl Leute',
+      ...(record.isPrivate ? [] : ['🔒 **Sperren/Öffnen** – niemand Neues kann mehr rein']),
+      '👢 **Rauswerfen** – jemanden aus dem Raum werfen'
+    ].join('\n'))
+    .setFooter({ text: 'Discord erlaubt nur 2 Namensänderungen pro 10 Minuten.' });
+
+  const gameSelect = new StringSelectMenuBuilder()
+    .setCustomId('voice:game')
+    .setPlaceholder('🎮 Spiel wählen …')
+    .addOptions(
+      ...Object.entries(GAMES).map(([key, game]) => ({ label: game.name, value: key, emoji: game.emoji })),
+      { label: 'Zurück zu meinem Namen', value: 'reset', emoji: '🔊' }
+    );
+
+  const buttons = [
+    new ButtonBuilder().setCustomId('voice:rename').setLabel('Umbenennen').setEmoji('✏️').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('voice:limit').setLabel('Limit').setEmoji('👥').setStyle(ButtonStyle.Secondary),
+    ...(record.isPrivate ? [] : [new ButtonBuilder().setCustomId('voice:lock').setLabel('Sperren/Öffnen').setEmoji('🔒').setStyle(ButtonStyle.Secondary)]),
+    new ButtonBuilder().setCustomId('voice:kick').setLabel('Rauswerfen').setEmoji('👢').setStyle(ButtonStyle.Danger)
+  ];
+
+  return {
+    embeds: [embed],
+    components: [new ActionRowBuilder().addComponents(gameSelect), new ActionRowBuilder().addComponents(buttons)]
+  };
+}
+
+export function ownerRoomName(member, isPrivate) {
+  return roomName(member, isPrivate);
+}
+
+export function customRoomName(text, isPrivate) {
+  return `${isPrivate ? '🔒' : '🔊'}┃${cleanName(text)}`;
+}
+
+export function gameRoomName(game, isPrivate) {
+  return `${isPrivate ? '🔒' : game.emoji}┃${game.name}`;
+}
+
+// Umbenennen kann wegen Discords Limit (2x pro 10 Min.) hängen → nach 3 Sek. nicht mehr warten.
+export async function renameRoom(room, name) {
+  const rename = room.setName(name).then(() => 'done').catch(() => 'failed');
+  const timeout = new Promise(resolve => setTimeout(() => resolve('delayed'), 3000));
+  return Promise.race([rename, timeout]);
+}
+
+export function lockTarget(guild) {
+  return findVerifiedRole(guild)?.id || guild.id;
+}
+
+export async function toggleRoomLock(room) {
+  const targetId = lockTarget(room.guild);
+  const locked = room.permissionOverwrites.cache.get(targetId)?.deny.has(PermissionFlagsBits.Connect) ?? false;
+  await room.permissionOverwrites.edit(targetId, { Connect: locked }, { reason: locked ? 'Raum geöffnet' : 'Raum gesperrt' });
+  return !locked;
 }
 
 // Sichtbar nur für "Verifiziert". Fehlt die Rolle, gilt das alte Verhalten (@everyone).
@@ -163,7 +248,12 @@ async function createRoom(state, isPrivate, rooms) {
   // User hat den Trigger in der Zwischenzeit verlassen → leeren Raum gleich wieder entfernen.
   if (!moved) {
     await evaluateRoom(guild, room.id, rooms);
+    return;
   }
+
+  await room.send(buildControlPanel(rooms[room.id])).catch(error => {
+    logger.warn('[CustomVoice] Could not post control panel', { roomId: room.id, error: error.message });
+  });
 }
 
 async function deleteRoom(guild, roomId, record, rooms) {
@@ -204,6 +294,11 @@ async function transferRoom(guild, roomId, record, newOwner) {
   // Umbenennen ist auf 2x pro 10 Min. limitiert und würde sonst blockieren → nicht abwarten.
   room?.setName(roomName(newOwner, record.isPrivate)).catch(() => {});
   waiting?.setName(waitingName(newOwner)).catch(() => {});
+
+  room?.send({
+    content: `👑 ${newOwner} ist jetzt Owner dieses Raums und kann die Raum-Steuerung oben benutzen.`,
+    allowedMentions: { users: [newOwner.id] }
+  }).catch(() => {});
 
   logger.info('[CustomVoice] Temporary room owner transferred', {
     guildId: guild.id,

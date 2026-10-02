@@ -1,19 +1,42 @@
-import { EmbedBuilder, MessageFlags } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags } from 'discord.js';
 import { verifyUser } from '../services/verificationService.js';
 import { handleInteractionError, replyUserError, ErrorTypes } from '../utils/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { InteractionHelper } from '../utils/interactionHelper.js';
 
-function verifiedNextStepEmbed(roleName) {
-    return new EmbedBuilder()
+// "Was nun?" nach dem Verifizieren: kurze Tour + Buttons, die direkt in die Channels springen.
+const NEXT_STEPS = [
+    { names: ['🎭┃rollen-auswahl', 'rollen-auswahl'], emoji: '🎭', label: 'Rollen-Auswahl', text: 'Wähl deine **Games** und schalte Game-Chats & Patch Notes frei' },
+    { names: ['🎂┃geburtstage', 'geburtstage'], emoji: '🎂', label: 'Geburtstag', text: 'Trag deinen **Geburtstag** ein – wir gratulieren dir' },
+    { names: ['➕┃channel-erstellen', 'channel-erstellen'], emoji: '🔊', label: 'Voice-Raum', text: 'Join den Channel und du bekommst deinen **eigenen Voice-Raum**' }
+];
+
+export function verifiedNextStep(guild) {
+    const steps = NEXT_STEPS
+        .map(step => ({ ...step, channel: guild.channels.cache.find(channel => step.names.includes(channel.name)) }))
+        .filter(step => step.channel);
+
+    const embed = new EmbedBuilder()
         .setColor(0x57F287)
-        .setTitle('✅ Verifiziert – abgeschlossen')
-        .setDescription(
-            'Du hast die Regeln bestätigt und die Rolle **' + roleName + '** erhalten.\n\n' +
-            '➡️ **Und jetzt?**\n' +
-            '**Als Nächstes: Rollen & Interessen**\n' +
-            'Dort kannst du dir später die Rollen auswählen, die zu dir passen.'
-        );
+        .setTitle('✅ Willkommen im Rudel! 🐺')
+        .setDescription([
+            'Du bist verifiziert und siehst jetzt alle Channels. 🎉',
+            '',
+            '## ➡️ Was nun?',
+            ...steps.map(step => `${step.emoji} ${step.text} → ${step.channel}`)
+        ].join('\n'));
+
+    const components = steps.length > 0
+        ? [new ActionRowBuilder().addComponents(steps.map(step =>
+            new ButtonBuilder()
+                .setLabel(step.label)
+                .setEmoji(step.emoji)
+                .setStyle(ButtonStyle.Link)
+                .setURL(`https://discord.com/channels/${guild.id}/${step.channel.id}`)
+        ))]
+        : [];
+
+    return { embeds: [embed], components };
 }
 
 export async function handleVerificationButton(interaction, client) {
@@ -41,21 +64,15 @@ export async function handleVerificationButton(interaction, client) {
             moderatorId: null
         });
 
-        if (result.status === 'already_verified') {
-            return await InteractionHelper.safeEditReply(interaction, {
-                embeds: [verifiedNextStepEmbed(result.roleName || 'Verifiziert')]
+        if (result.status !== 'already_verified') {
+            logger.info('User verified via button', {
+                guildId: guild.id,
+                userId,
+                roleName: result.roleName
             });
         }
 
-        logger.info('User verified via button', {
-            guildId: guild.id,
-            userId,
-            roleName: result.roleName
-        });
-
-        await InteractionHelper.safeEditReply(interaction, {
-            embeds: [verifiedNextStepEmbed(result.roleName || 'Verifiziert')]
-        });
+        await InteractionHelper.safeEditReply(interaction, verifiedNextStep(guild));
 
     } catch (error) {
         logger.error('Error in verification button handler', {

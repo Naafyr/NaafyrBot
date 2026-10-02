@@ -5,6 +5,7 @@ import {
   updateCounter
 } from '../../../services/serverstatsService.js';
 import { logger } from '../../../utils/logger.js';
+import { sortCategories } from '../../../utils/categoryOrder.js';
 import { InteractionHelper } from '../../../utils/interactionHelper.js';
 import { replyUserError, ErrorTypes } from '../../../utils/errorHandler.js';
 
@@ -104,6 +105,7 @@ export async function handleSetup(interaction, client) {
     }
 
     await saveServerCounters(client, guild.id, nextCounters);
+    await sortCategories(guild);
 
     await InteractionHelper.safeEditReply(interaction, {
       content:

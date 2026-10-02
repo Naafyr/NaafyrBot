@@ -13,6 +13,7 @@ import { patchGuildConfig } from '../../services/config/guildConfig.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
 import { replyUserError, ErrorTypes } from '../../utils/errorHandler.js';
 import { logger } from '../../utils/logger.js';
+import { sortCategories } from '../../utils/categoryOrder.js';
 
 async function getOrCreateVerifiedRole(guild) {
     let role = guild.roles.cache.find(
@@ -379,8 +380,16 @@ export default {
             await getOrCreateTextChannel(
                 guild,
                 '💭┃zitate',
-                'Zitate und Sprüche',
+                'Zitate und Sprüche – Rechtsklick auf eine Nachricht → Apps → Als Zitat speichern',
                 ['zitate'],
+                communityCategory
+            );
+
+            await getOrCreateTextChannel(
+                guild,
+                '💡┃vorschläge',
+                'Ideen für den Server – jeder Vorschlag bekommt 👍/👎 und einen Thread',
+                ['vorschläge', 'vorschlaege'],
                 communityCategory
             );
 
@@ -480,6 +489,8 @@ export default {
                     }
                 }
             }, { source: 'newwelcome_setup' });
+
+            await sortCategories(guild);
 
             await InteractionHelper.safeEditReply(interaction, {
                 content:
