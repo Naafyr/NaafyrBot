@@ -30,7 +30,25 @@ async function getOrCreateVerifiedRole(guild) {
     return role;
 }
 
-async function getOrCreateTextChannel(guild, name, topic, aliases = []) {
+async function getOrCreateCategory(guild, name, aliases = []) {
+    let category = guild.channels.cache.find(
+        c => c.type === ChannelType.GuildCategory && (c.name === name || aliases.includes(c.name))
+    );
+
+    if (!category) {
+        category = await guild.channels.create({
+            name,
+            type: ChannelType.GuildCategory,
+            reason: 'NaafyrBot server structure setup'
+        });
+    } else if (category.name !== name) {
+        await category.setName(name, 'NaafyrBot server structure style update');
+    }
+
+    return category;
+}
+
+async function getOrCreateTextChannel(guild, name, topic, aliases = [], parent = null) {
     let channel = guild.channels.cache.find(
         c => c.type === ChannelType.GuildText && (c.name === name || aliases.includes(c.name))
     );
@@ -40,6 +58,7 @@ async function getOrCreateTextChannel(guild, name, topic, aliases = []) {
             name,
             type: ChannelType.GuildText,
             topic,
+            parent: parent?.id,
             reason: 'NaafyrBot new welcome setup'
         });
     } else {
@@ -56,8 +75,37 @@ async function getOrCreateTextChannel(guild, name, topic, aliases = []) {
         if (Object.keys(updates).length > 0) {
             await channel.edit({
                 ...updates,
-                reason: 'NaafyrBot welcome channel style update'
+                reason: 'NaafyrBot channel style update'
             });
+        }
+
+        if (parent && channel.parentId !== parent.id) {
+            await channel.setParent(parent.id, { lockPermissions: false });
+        }
+    }
+
+    return channel;
+}
+
+async function getOrCreateVoiceChannel(guild, name, aliases = [], parent = null) {
+    let channel = guild.channels.cache.find(
+        c => c.type === ChannelType.GuildVoice && (c.name === name || aliases.includes(c.name))
+    );
+
+    if (!channel) {
+        channel = await guild.channels.create({
+            name,
+            type: ChannelType.GuildVoice,
+            parent: parent?.id,
+            reason: 'NaafyrBot voice structure setup'
+        });
+    } else {
+        if (channel.name !== name) {
+            await channel.setName(name, 'NaafyrBot channel style update');
+        }
+
+        if (parent && channel.parentId !== parent.id) {
+            await channel.setParent(parent.id, { lockPermissions: false });
         }
     }
 
@@ -199,53 +247,164 @@ export default {
                 });
             }
 
-            const welcomeChannel = await getOrCreateTextChannel(
+            const moinCategory = await getOrCreateCategory(
                 guild,
-                '👋┃willkommen',
-                'Willkommen auf dem Server',
-                ['willkommen']
+                '──── MOIN ────',
+                ['Moin', 'Start', 'Start Hier']
+            );
+
+            const contentCategory = await getOrCreateCategory(
+                guild,
+                '──── CONTENT ────',
+                ['Content']
+            );
+
+            const welcomeCategory = await getOrCreateCategory(
+                guild,
+                '──── WILLKOMMEN ────',
+                ['Willkommen']
+            );
+
+            const communityCategory = await getOrCreateCategory(
+                guild,
+                '──── COMMUNITY ────',
+                ['Community', 'Treffpunkt', 'Chats']
+            );
+
+            const voiceCategory = await getOrCreateCategory(
+                guild,
+                '──── VOICE ────',
+                ['Voice', 'Sprachkanäle', 'Sprachchannel']
+            );
+
+            const leaderboardCategory = await getOrCreateCategory(
+                guild,
+                '──── LEADERBOARD ────',
+                ['Leaderboard', 'Leaderboards', 'Ranglisten']
             );
 
             const rulesChannel = await getOrCreateTextChannel(
                 guild,
                 '📜┃regeln',
                 'Regeln lesen und verifizieren',
-                ['regeln']
-            );
-
-            await getOrCreateTextChannel(
-                guild,
-                '🎭┃rollen',
-                'Rollen auswählen',
-                ['rollen']
-            );
-
-            await getOrCreateTextChannel(
-                guild,
-                '🏆┃leaderboard',
-                'Server-Leaderboard',
-                ['leaderboard']
+                ['regeln'],
+                moinCategory
             );
 
             await getOrCreateTextChannel(
                 guild,
                 '🔴┃live',
                 'Live-Ankündigungen',
-                ['live']
+                ['live'],
+                contentCategory
             );
 
             await getOrCreateTextChannel(
                 guild,
                 '📺┃neue-videos',
                 'Neue Videos',
-                ['neue-videos', 'videos']
+                ['neue-videos', 'videos'],
+                contentCategory
             );
 
             await getOrCreateTextChannel(
                 guild,
                 '✂️┃clips-und-highlights',
                 'Clips und Highlights',
-                ['clips-und-highlights', 'clips', 'highlights']
+                ['clips-und-highlights', 'clips', 'highlights'],
+                contentCategory
+            );
+
+            const welcomeChannel = await getOrCreateTextChannel(
+                guild,
+                '👋┃willkommen',
+                'Willkommen auf dem Server',
+                ['willkommen'],
+                welcomeCategory
+            );
+
+            await getOrCreateTextChannel(
+                guild,
+                '🎭┃rollen-auswahl',
+                'Rollen auswählen',
+                ['rollen', 'rollen-auswahl', '🎭┃rollen'],
+                welcomeCategory
+            );
+
+            await getOrCreateTextChannel(
+                guild,
+                '💬┃allgemein',
+                'Allgemeiner Community-Chat',
+                ['allgemein'],
+                communityCategory
+            );
+
+            await getOrCreateTextChannel(
+                guild,
+                '🍕┃essen-bilder',
+                'Bilder von Essen und Getränken',
+                ['essen-bilder', 'food', 'essen'],
+                communityCategory
+            );
+
+            await getOrCreateTextChannel(
+                guild,
+                '🐾┃tier-bilder',
+                'Bilder von Tieren und Haustieren',
+                ['tier-bilder', 'tiere', 'haustiere'],
+                communityCategory
+            );
+
+            await getOrCreateTextChannel(
+                guild,
+                '📸┃allgemein-bilder',
+                'Allgemeine Bilder und Fotos',
+                ['allgemein-bilder', 'bilder', 'fotos'],
+                communityCategory
+            );
+
+            await getOrCreateTextChannel(
+                guild,
+                '💭┃zitate',
+                'Zitate und Sprüche',
+                ['zitate'],
+                communityCategory
+            );
+
+            await getOrCreateVoiceChannel(
+                guild,
+                '➕┃channel-erstellen',
+                ['channel-erstellen'],
+                voiceCategory
+            );
+
+            await getOrCreateVoiceChannel(
+                guild,
+                '🔒┃privaten-channel-erstellen',
+                ['privaten-channel-erstellen', 'premium-channel-erstellen'],
+                voiceCategory
+            );
+
+            await getOrCreateVoiceChannel(
+                guild,
+                '⏳┃wartebereich',
+                ['wartebereich', 'waiting-room', 'waiting-for-moving'],
+                voiceCategory
+            );
+
+            await getOrCreateVoiceChannel(
+                guild,
+                '😴┃afk',
+                ['afk'],
+                voiceCategory
+            );
+
+            await getOrCreateTextChannel(
+                guild,
+                '🏆┃leaderboard',
+                'Server-Leaderboard',
+                ['leaderboard'],
+                leaderboardCategory
             );
 
             await applyVisibility(
@@ -308,8 +467,8 @@ export default {
 
             await InteractionHelper.safeEditReply(interaction, {
                 content:
-                    '✅ **New Welcome eingerichtet.**\n' +
-                    'Regel-Embed und Verifizierung wurden komplett neu aufgebaut.'
+                    '✅ **Server-Struktur & New Welcome eingerichtet.**\n' +
+                    'Kategorien, Channels, Regel-Embed und Verifizierung wurden aktualisiert.'
             });
 
             logger.info('[NewWelcome] Setup completed', {
