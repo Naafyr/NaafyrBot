@@ -213,6 +213,41 @@ export default {
                 ['regeln']
             );
 
+            await getOrCreateTextChannel(
+                guild,
+                '🎭┃rollen',
+                'Rollen auswählen',
+                ['rollen']
+            );
+
+            await getOrCreateTextChannel(
+                guild,
+                '🏆┃leaderboard',
+                'Server-Leaderboard',
+                ['leaderboard']
+            );
+
+            await getOrCreateTextChannel(
+                guild,
+                '🔴┃live',
+                'Live-Ankündigungen',
+                ['live']
+            );
+
+            await getOrCreateTextChannel(
+                guild,
+                '📺┃neue-videos',
+                'Neue Videos',
+                ['neue-videos', 'videos']
+            );
+
+            await getOrCreateTextChannel(
+                guild,
+                '✂️┃clips-und-highlights',
+                'Clips und Highlights',
+                ['clips-und-highlights', 'clips', 'highlights']
+            );
+
             await applyVisibility(
                 guild,
                 verifiedRole,
