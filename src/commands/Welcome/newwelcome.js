@@ -299,13 +299,25 @@ export default {
                 contentCategory
             );
 
-            await getOrCreateTextChannel(
+            const videosChannel = await getOrCreateTextChannel(
                 guild,
                 '📺┃neue-videos',
                 'Neue Videos',
                 ['neue-videos', 'videos'],
                 contentCategory
             );
+
+            const shortsChannel = await getOrCreateTextChannel(
+                guild,
+                '📱┃neue-shorts',
+                'Neue YouTube Shorts',
+                ['neue-shorts', 'shorts'],
+                contentCategory
+            );
+
+            if (shortsChannel.position !== videosChannel.position + 1) {
+                await shortsChannel.setPosition(videosChannel.position + 1).catch(() => {});
+            }
 
             await getOrCreateTextChannel(
                 guild,

@@ -4,7 +4,7 @@ import { getGuildConfig } from '../services/config/guildConfig.js';
 import { getWelcomeConfig } from '../utils/database.js';
 import { formatWelcomeMessage, getRandomWelcomeMessage } from '../utils/welcome.js';
 import { logEvent, EVENT_TYPES } from '../services/loggingService.js';
-import { getServerCounters, updateCounter } from '../services/serverstatsService.js';
+import { scheduleGuildCounterUpdate } from '../services/serverstatsService.js';
 import { setBirthday as dbSetBirthday } from '../utils/database.js';
 import { logger } from '../utils/logger.js';
 
@@ -45,6 +45,8 @@ export default {
 
                 const canEmbed = permissions.has(PermissionFlagsBits.EmbedLinks);
                 const randomEmbedColor = Math.floor(Math.random() * 0xFFFFFF);
+                const botCount = guild.members.cache.filter(guildMember => guildMember.user.bot).size;
+                const packNumber = Math.max(guild.memberCount - botCount, 1);
 
                 if (!canEmbed) {
                     await channel.send({
@@ -58,7 +60,7 @@ export default {
                             '',
                             welcomeMessage,
                             '',
-                            `🐺 **Rudel #${guild.memberCount}**`
+                            `🐺 **Rudel #${packNumber}**`
                         ].join('\n'))
                         .setThumbnail(user.displayAvatarURL())
                         .setTimestamp()
@@ -126,16 +128,7 @@ export default {
             logger.debug('Error logging member join:', error);
         }
 
-        try {
-            const counters = await getServerCounters(member.client, guild.id);
-            for (const counter of counters) {
-                if (counter && counter.type && counter.channelId && counter.enabled !== false) {
-                    await updateCounter(member.client, guild, counter);
-                }
-            }
-        } catch (error) {
-            logger.debug('Error updating counters on member join:', error);
-        }
+        scheduleGuildCounterUpdate(member.client, guild);
 
         try {
             const backupKey = `guild:${guild.id}:birthdays:left`;

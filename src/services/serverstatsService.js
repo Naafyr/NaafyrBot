@@ -101,8 +101,8 @@ export async function getGuildCounterStats(guild) {
   };
 }
 
-export async function getCounterCount(guild, type) {
-  const stats = await getGuildCounterStats(guild);
+export async function getCounterCount(guild, type, stats = null) {
+  stats ??= await getGuildCounterStats(guild);
 
   switch (type) {
     case 'members':
@@ -159,7 +159,55 @@ function sanitizeCounters(counters, guildId) {
     .map(counter => normalizeCounter(counter, guildId));
 }
 
-export async function updateCounter(client, guild, counter) {
+// Discord erlaubt nur 2 Umbenennungen pro Channel in 10 Minuten. Darüber hinaus
+// stauen sich die Requests; deshalb überspringen und beim nächsten Cron-Lauf nachholen.
+const RENAME_WINDOW_MS = 10 * 60 * 1000;
+const RENAMES_PER_WINDOW = 2;
+const renameHistory = new Map();
+
+function canRename(channelId) {
+  const now = Date.now();
+  const recent = (renameHistory.get(channelId) || []).filter(time => now - time < RENAME_WINDOW_MS);
+  renameHistory.set(channelId, recent);
+  return recent.length < RENAMES_PER_WINDOW;
+}
+
+function recordRename(channelId) {
+  const history = renameHistory.get(channelId) || [];
+  history.push(Date.now());
+  renameHistory.set(channelId, history);
+}
+
+export async function updateGuildCounters(client, guild) {
+  const counters = await getServerCounters(client, guild.id);
+  const active = counters.filter(counter => counter && counter.type && counter.channelId && counter.enabled !== false);
+  if (active.length === 0) return;
+
+  const stats = await getGuildCounterStats(guild);
+  for (const counter of active) {
+    await updateCounter(client, guild, counter, stats);
+  }
+}
+
+// Join/Leave lösen viele Updates kurz hintereinander aus → zu einem Update bündeln.
+const COUNTER_DEBOUNCE_MS = 30 * 1000;
+const pendingCounterUpdates = new Map();
+
+export function scheduleGuildCounterUpdate(client, guild) {
+  if (pendingCounterUpdates.has(guild.id)) return;
+
+  const timeout = setTimeout(() => {
+    pendingCounterUpdates.delete(guild.id);
+    updateGuildCounters(client, guild).catch(error => {
+      logger.debug('Error in scheduled counter update:', error);
+    });
+  }, COUNTER_DEBOUNCE_MS);
+
+  timeout.unref?.();
+  pendingCounterUpdates.set(guild.id, timeout);
+}
+
+export async function updateCounter(client, guild, counter, stats = null) {
   try {
     if (!counter || !counter.type || !counter.channelId) {
       logger.warn('Skipping invalid counter in updateCounter:', counter);
@@ -180,7 +228,7 @@ export async function updateCounter(client, guild, counter) {
       return false;
     }
 
-    const count = await getCounterCount(guild, type);
+    const count = await getCounterCount(guild, type, stats);
     if (count === null) {
       logger.error('Unknown counter type:', type);
       return false;
@@ -197,7 +245,13 @@ export async function updateCounter(client, guild, counter) {
     }
     
     if (channel.name !== newName) {
+      if (!canRename(channel.id)) {
+        logger.debug(`Counter ${channel.id} rename skipped (Discord rate limit), will retry on next update`);
+        return true;
+      }
+
       try {
+        recordRename(channel.id);
         await channel.setName(newName);
         if (process.env.NODE_ENV !== 'production') {
           logger.debug(`Updated channel name to: "${newName}"`);
