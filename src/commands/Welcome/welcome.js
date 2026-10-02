@@ -15,16 +15,16 @@ import { InteractionHelper } from '../../utils/interactionHelper.js';
 import { ErrorTypes, replyUserError } from '../../utils/errorHandler.js';
 
 const RULES_TEXT = [
-    '\\u{1F91D} **1. Respektvoll miteinander umgehen**\\nBehandle andere Mitglieder freundlich und respektvoll. Beleidigungen, Provokationen und unnötiger Streit gehören hier nicht hin.',
-    '\\u{1F6AB} **2. Kein Spam**\\nKein unnötiges Spammen von Nachrichten, Emojis, Bildern, Sounds oder Erwähnungen.',
-    '\\u{1F4E2} **3. Keine Werbung**\\nWerbung für eigene Server, Social-Media-Kanäle, Streams oder andere Inhalte ist ohne vorherige Erlaubnis nicht gestattet.',
-    '\\u{1F51E} **4. Keine unangemessenen Inhalte**\\nExtremistische, diskriminierende, sexuelle oder anderweitig problematische Inhalte haben auf dem Server nichts verloren.',
-    '\\u{1F645} **5. Andere Mitglieder nicht nerven oder bedrängen**\\nRespektiere, wenn Leute gerade miteinander reden oder spielen.',
-    '\\u{1F399}\\u{FE0F} **6. Rücksicht im Voice-Chat**\\nKein absichtliches Schreien, Soundboard-Spam oder extrem laute Geräusche.',
-    '\\u{1F3A5} **7. Aufnahmen nur mit Zustimmung**\\nWenn Stimmen oder Gespräche aufgenommen oder veröffentlicht werden sollen, sollten die betroffenen Personen vorher Bescheid wissen.',
-    '\\u{1F4C2} **8. Nutzt die richtigen Channels**\\nVersucht Inhalte in die dafür vorgesehenen Channels zu schicken.',
-    '\\u{1F4CC} **9. Discord-Regeln gelten weiterhin**\\nDie Nutzungsbedingungen und Community-Richtlinien von Discord gelten selbstverständlich auch hier.'
-].join('\\n\\n');
+    '🤝 **1. Respektvoll miteinander umgehen**\nBehandle andere Mitglieder freundlich und respektvoll. Beleidigungen, Provokationen und unnötiger Streit gehören hier nicht hin.',
+    '🚫 **2. Kein Spam**\nKein unnötiges Spammen von Nachrichten, Emojis, Bildern, Sounds oder Erwähnungen.',
+    '📢 **3. Keine Werbung**\nWerbung für eigene Server, Social-Media-Kanäle, Streams oder andere Inhalte ist ohne vorherige Erlaubnis nicht gestattet.',
+    '🔞 **4. Keine unangemessenen Inhalte**\nExtremistische, diskriminierende, sexuelle oder anderweitig problematische Inhalte haben auf dem Server nichts verloren.',
+    '🙅 **5. Andere Mitglieder nicht nerven oder bedrängen**\nRespektiere, wenn Leute gerade miteinander reden oder spielen.',
+    '🎙️ **6. Rücksicht im Voice-Chat**\nKein absichtliches Schreien, Soundboard-Spam oder extrem laute Geräusche.',
+    '🎥 **7. Aufnahmen nur mit Zustimmung**\nWenn Stimmen oder Gespräche aufgenommen oder veröffentlicht werden sollen, sollten die betroffenen Personen vorher Bescheid wissen.',
+    '📂 **8. Nutzt die richtigen Channels**\nVersucht Inhalte in die dafür vorgesehenen Channels zu schicken.',
+    '📌 **9. Discord-Regeln gelten weiterhin**\nDie Nutzungsbedingungen und Community-Richtlinien von Discord gelten selbstverständlich auch hier.'
+].join('\n\n');
 
 function findRoleGating(channel, guild) {
     const overwrites = channel.permissionOverwrites?.cache;
@@ -174,13 +174,13 @@ export default {
 
             const rulesEmbed = new EmbedBuilder()
                 .setColor(0xB84DFF)
-                .setTitle('\\u{1F4DC} SERVER-REGELN')
+                .setTitle('📜 SERVER-REGELN')
                 .setDescription(
-                    'Willkommen auf **' + guild.name + '**! \\u{1F44B}\\n' +
-                    'Bitte lies dir die Regeln kurz durch, bevor du dich verifizierst.\\n\\n' +
+                    'Willkommen auf **' + guild.name + '**! 👋\n' +
+                    'Bitte lies dir die Regeln kurz durch, bevor du dich verifizierst.\n\n' +
                     RULES_TEXT +
-                    '\\n\\n\\u{2705} **VERIFIZIERUNG**\\n\\n' +
-                    'Mit einem Klick auf **\\u{2705} Verifizieren** bestätigst du, dass du die Regeln gelesen hast und akzeptierst.\\n\\n' +
+                    '\n\n✅ **VERIFIZIERUNG**\n\n' +
+                    'Mit einem Klick auf **✅ Verifizieren** bestätigst du, dass du die Regeln gelesen hast und akzeptierst.\n\n' +
                     'Danach erhältst du Zugriff auf die normalen Server-Channels.'
                 );
 
