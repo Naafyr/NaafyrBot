@@ -9,6 +9,7 @@ import {
 import { sanitizeInput } from '../utils/validation.js';
 import { logger } from '../utils/logger.js';
 import { handleMusicVoiceState } from '../services/music/musicVoiceState.js';
+import { handleCustomVoiceCreate } from '../services/customVoiceCreateService.js';
 
 const channelCreationCooldown = new Map();
 const VOICE_CREATE_COOLDOWN_MS = 2000;
@@ -30,6 +31,11 @@ export default {
         cleanupCooldownEntries();
 
         try {
+            const customHandled = await handleCustomVoiceCreate(oldState, newState);
+            if (customHandled) {
+                return;
+            }
+
             const config = await getJoinToCreateConfig(client, guildId);
 
             if (!config.enabled || config.triggerChannels.length === 0) {
