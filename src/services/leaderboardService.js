@@ -44,6 +44,7 @@ export const PERIODS = {
 const ROLE_PERIOD = 'month';
 export const RANK_COLORS = [0xF1C40F, 0xBDC3C7, 0xCD7F32];
 const MEDALS = ['🥇', '🥈', '🥉'];
+const COLUMN_RULE = '━━━━━━━━━━';
 
 // ---------- Zeiträume ----------
 
@@ -210,14 +211,27 @@ export async function buildLeaderboardEmbeds(client, guild) {
       .setColor(config.color)
       .setTitle(config.title);
 
-    for (const [period, periodConfig] of Object.entries(PERIODS)) {
+    const columns = [];
+    for (const period of Object.keys(PERIODS)) {
       const entries = await topEntries(client, guild.id, category, period);
       const lines = entries.map(([userId, value], index) =>
         `${MEDALS[index] || `\`${index + 1}.\``} <@${userId}> · ${config.short(value)}`
       );
+      columns.push({ period, lines: lines.length > 0 ? lines : ['*Noch leer*'] });
+    }
+
+    // Discord kennt keine Tabellenlinien → mit Rahmenzeichen nachbilden.
+    // Alle Spalten gleich lang auffüllen, damit die senkrechte Linie durchgeht.
+    const rows = Math.max(...columns.map(column => column.lines.length));
+
+    for (const [index, { period, lines }] of columns.entries()) {
+      const first = index === 0;
+      const padded = [...lines, ...Array(rows - lines.length).fill('​')];
+      const body = padded.map(line => (first ? line : `┃ ${line}`));
+
       embed.addFields({
-        name: `${periodConfig.emoji} ${periodConfig.label}`,
-        value: lines.join('\n') || '*Noch leer*',
+        name: `${first ? '' : '┃ '}${PERIODS[period].emoji} ${PERIODS[period].label}`,
+        value: [first ? COLUMN_RULE : `╋${COLUMN_RULE}`, ...body].join('\n'),
         inline: true
       });
     }
