@@ -39,12 +39,12 @@ export default {
                 const messageContent = welcomeConfig.welcomePing ? user.toString() : null;
 
                 const embedTitle = formatWelcomeMessage(
-                    welcomeConfig.welcomeEmbed?.title || '🎉 Welcome!',
+                    welcomeConfig.welcomeEmbed?.title || '🎉 Willkommen!',
                     formatData
                 );
                 const embedFooter = welcomeConfig.welcomeEmbed?.footer
                     ? formatWelcomeMessage(welcomeConfig.welcomeEmbed.footer, formatData)
-                    : `Welcome to ${guild.name}!`;
+                    : `Willkommen auf ${guild.name}!`;
 
                 const canEmbed = permissions.has(PermissionFlagsBits.EmbedLinks);
 
@@ -56,12 +56,12 @@ export default {
                     const embed = new EmbedBuilder()
                         .setColor(welcomeConfig.welcomeEmbed?.color || getColor('success'))
                         .setTitle(embedTitle)
-                        .setDescription(welcomeMessage)
+                        .setDescription([
+                            welcomeMessage,
+                            '',
+                            `🐺 **Rudel #${guild.memberCount}**`
+                        ].join('\n'))
                         .setThumbnail(user.displayAvatarURL())
-                        .addFields(
-                            { name: 'User', value: `${user.tag} (${user.id})`, inline: true },
-                            { name: 'Member Count', value: guild.memberCount.toString(), inline: true }
-                        )
                         .setTimestamp()
                         .setFooter({ text: embedFooter });
                     
