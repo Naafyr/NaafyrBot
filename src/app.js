@@ -11,7 +11,7 @@ import { getServerCounters, saveServerCounters, updateCounter } from './services
 import { logger, startupLog, shutdownLog } from './utils/logger.js';
 import { checkBirthdays } from './services/birthdayService.js';
 import { checkGiveaways } from './services/giveawayService.js';
-import { loadCommands, registerCommands as registerSlashCommands } from './handlers/loaders/commandLoader.js';
+import { loadCommands, registerCommands as registerSlashCommands, registerGuildRefreshCommand } from './handlers/loaders/commandLoader.js';
 import { runSafeTask, handleTaskError, ErrorCodes } from './utils/errorHandler.js';
 import { initializeMusic } from './services/music/riffySetup.js';
 import { shutdownMusic } from './services/music/playerHandler.js';
@@ -92,6 +92,18 @@ class TitanBot extends Client {
       
       startupLog('Registering slash commands globally...');
       await this.registerCommands();
+
+      startupLog('Registering /refresh immediately for connected guilds...');
+      for (const guild of this.guilds.cache.values()) {
+        try {
+          await registerGuildRefreshCommand(this, guild.id, {
+            clientId: this.config.bot.clientId
+          });
+        } catch (error) {
+          logger.warn(`Failed to register /refresh for guild ${guild.id}: ${error.message}`);
+        }
+      }
+
       startupLog('Slash commands registration complete');
       
       const databaseMode = dbStatus.isDegraded
