@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const MAX_COMMANDS = 100;
 // Werden pro Server registriert (sofort sichtbar) statt global.
-const IMMEDIATE_GUILD_COMMANDS = ['refresh', 'serverstats', 'newwelcome', 'youtube', 'rangliste', 'rollenauswahl'];
+const IMMEDIATE_GUILD_COMMANDS = ['refresh', 'serverstats', 'newwelcome', 'youtube', 'rangliste', 'rollenauswahl', 'geburtstag'];
 const COMMAND_COUNT_WARN_THRESHOLD = 90;
 
 function getSubcommandInfo(commandData) {

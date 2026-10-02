@@ -1,359 +1,193 @@
-// birthdayService.js
+// birthdayService.js – Geburtstage: Box mit den nächsten Geburtstagen + tägliche Gratulation (Wiener Zeit).
 
-import { getGuildConfig } from './config/guildConfig.js';
-import { getGuildBirthdays, setBirthday as dbSetBirthday, deleteBirthday as dbDeleteBirthday, getMonthName, getBirthdayTrackingKey } from '../utils/database.js';
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder
+} from 'discord.js';
+import { getGuildBirthdays, setBirthday as dbSetBirthday, deleteBirthday as dbDeleteBirthday } from '../utils/database.js';
 import { logger } from '../utils/logger.js';
-import { TitanBotError, ErrorTypes } from '../utils/errorHandler.js';
 
-export function validateBirthday(month, day) {
-  
-  if (typeof month !== 'number' || typeof day !== 'number') {
-    return {
-      isValid: false,
-      error: 'Month and day must be numbers'
-    };
-  }
+const TIME_ZONE = 'Europe/Vienna';
+const UPCOMING_LIMIT = 5;
+const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 
-  if (month < 1 || month > 12) {
-    return {
-      isValid: false,
-      error: 'Month must be between 1 and 12'
-    };
-  }
+const CONGRATS = [
+  '🎉 Alles Gute zum Geburtstag, {user}! Lass dich heute ordentlich feiern! 🥳',
+  '🎂 Das ganze Rudel gratuliert {user} zum Geburtstag! Hab einen mega Tag! 🐺',
+  '🎈 Happy Birthday, {user}! Level up im echten Leben! 🎮',
+  '🥳 Heute ist der große Tag von {user}! Alles Liebe und Gute zum Geburtstag! 🎁',
+  '🎊 {user} hat Geburtstag! Kuchen für alle – und fleißig gratulieren! 🍰'
+];
 
-  if (day < 1 || day > 31) {
-    return {
-      isValid: false,
-      error: 'Day must be between 1 and 31'
-    };
-  }
-
-  const currentYear = new Date().getFullYear();
-  const date = new Date(currentYear, month - 1, day);
-  
-  if (isNaN(date.getTime()) || date.getMonth() !== month - 1 || date.getDate() !== day) {
-    return {
-      isValid: false,
-      error: 'Invalid date. Please check the month and day combination (e.g., February 29th only exists in leap years)'
-    };
-  }
-
-  return { isValid: true };
+function panelKey(guildId) {
+  return `guild:${guildId}:geburtstage:panel`;
 }
 
-export async function setBirthday(client, guildId, userId, month, day) {
-  try {
-    
-    const validation = validateBirthday(month, day);
-    if (!validation.isValid) {
-      logger.warn('Birthday validation failed', {
-        userId,
-        guildId,
-        month,
-        day,
-        error: validation.error
-      });
-      
-      throw new TitanBotError(
-        validation.error,
-        ErrorTypes.VALIDATION,
-        validation.error,
-        { month, day, userId, guildId }
-      );
-    }
-
-    const success = await dbSetBirthday(client, guildId, userId, month, day);
-    
-    if (!success) {
-      throw new TitanBotError(
-        'Failed to save birthday to database',
-        ErrorTypes.DATABASE,
-        'Failed to set your birthday. Please try again later.',
-        { userId, guildId, month, day }
-      );
-    }
-
-    logger.info('Birthday set successfully', {
-      userId,
-      guildId,
-      month,
-      day,
-      monthName: getMonthName(month)
-    });
-
-    return {
-      data: {
-        month,
-        day,
-        monthName: getMonthName(month)
-      }
-    };
-  } catch (error) {
-    logger.error('Error in setBirthday service', {
-      error: error.message,
-      stack: error.stack,
-      userId,
-      guildId,
-      month,
-      day
-    });
-    
-    throw error;
-  }
+function lastRunKey(guildId) {
+  return `guild:${guildId}:geburtstage:lastrun`;
 }
 
-export async function getUserBirthday(client, guildId, userId) {
-  try {
-    const birthdays = await getGuildBirthdays(client, guildId);
-    const birthdayData = birthdays[userId];
-    
-    if (!birthdayData) {
-      return null;
-    }
+// ---------- Datum (Wiener Zeit) ----------
 
-    return {
-      month: birthdayData.month,
-      day: birthdayData.day,
-      monthName: getMonthName(birthdayData.month)
-    };
-  } catch (error) {
-    logger.error('Error in getUserBirthday service', {
-      error: error.message,
-      userId,
-      guildId
-    });
-    throw error;
+export function viennaToday(date = new Date()) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' })
+      .formatToParts(date)
+      .map(part => [part.type, Number(part.value)])
+  );
+  return { year: parts.year, month: parts.month, day: parts.day };
+}
+
+function isLeapYear(year) {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+// 29. Februar wird in Nicht-Schaltjahren am 28. Februar gefeiert.
+function celebrationDay(month, day, year) {
+  return month === 2 && day === 29 && !isLeapYear(year) ? 28 : day;
+}
+
+export function isValidBirthday(day, month) {
+  if (!Number.isInteger(day) || !Number.isInteger(month) || month < 1 || month > 12 || day < 1) return false;
+  const daysInMonth = new Date(Date.UTC(2024, month, 0)).getUTCDate(); // 2024 = Schaltjahr → 29.02. erlaubt
+  return day <= daysInMonth;
+}
+
+export function formatBirthday(day, month) {
+  return `${day}. ${MONTHS[month - 1]}`;
+}
+
+function daysUntil(today, month, day) {
+  const start = Date.UTC(today.year, today.month - 1, today.day);
+  let year = today.year;
+  let target = Date.UTC(year, month - 1, celebrationDay(month, day, year));
+  if (target < start) {
+    year += 1;
+    target = Date.UTC(year, month - 1, celebrationDay(month, day, year));
+  }
+  return Math.round((target - start) / 86_400_000);
+}
+
+export async function getUpcomingBirthdays(client, guildId, today = viennaToday(), limit = UPCOMING_LIMIT) {
+  const birthdays = (await getGuildBirthdays(client, guildId)) || {};
+  return Object.entries(birthdays)
+    .map(([userId, data]) => ({ userId, month: data.month, day: data.day, inDays: daysUntil(today, data.month, data.day) }))
+    .sort((a, b) => a.inDays - b.inDays)
+    .slice(0, limit);
+}
+
+// ---------- Box im Channel ----------
+
+export async function buildBirthdayPanel(client, guildId, today = viennaToday()) {
+  const upcoming = await getUpcomingBirthdays(client, guildId, today);
+  const lines = upcoming.map(entry => {
+    if (entry.inDays === 0) return `🥳 **Heute!** <@${entry.userId}> hat Geburtstag!`;
+    const when = entry.inDays === 1 ? 'morgen' : `in ${entry.inDays} Tagen`;
+    return `🎈 <@${entry.userId}> – ${formatBirthday(entry.day, entry.month)} · ${when}`;
+  });
+
+  const embed = new EmbedBuilder()
+    .setColor(0xFF69B4)
+    .setTitle('🎂 GEBURTSTAGE')
+    .setDescription([
+      'Trag deinen Geburtstag ein, damit wir dir an deinem Tag gratulieren können! 🎉',
+      'Nur Tag und Monat – dein Alter bleibt dein Geheimnis. 🤫',
+      '',
+      '📅 **Die nächsten Geburtstage**',
+      lines.length > 0 ? lines.join('\n') : '*Noch niemand eingetragen – sei der Erste!*'
+    ].join('\n'))
+    .setFooter({ text: 'Wird täglich aktualisiert' });
+
+  const buttons = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('geburtstag:set').setLabel('Eintragen / ändern').setEmoji('🎂').setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId('geburtstag:remove').setLabel('Entfernen').setEmoji('🗑️').setStyle(ButtonStyle.Secondary)
+  );
+
+  return { embeds: [embed], components: [buttons] };
+}
+
+export async function savePanelRef(client, guildId, message) {
+  await client.db.set(panelKey(guildId), { channelId: message.channelId, messageId: message.id });
+}
+
+export async function getPanelChannel(client, guild) {
+  const ref = await client.db.get(panelKey(guild.id));
+  return ref?.channelId ? guild.channels.cache.get(ref.channelId) || null : null;
+}
+
+export async function refreshBirthdayPanel(client, guild) {
+  const ref = await client.db.get(panelKey(guild.id));
+  if (!ref?.channelId || !ref?.messageId) return;
+
+  const channel = guild.channels.cache.get(ref.channelId);
+  const message = await channel?.messages.fetch(ref.messageId).catch(() => null);
+  if (message) {
+    await message.edit(await buildBirthdayPanel(client, guild.id));
   }
 }
 
-export async function getAllBirthdays(client, guildId) {
-  try {
-    const birthdays = await getGuildBirthdays(client, guildId);
-    
-    if (!birthdays || Object.keys(birthdays).length === 0) {
-      return [];
-    }
+// ---------- Eintragen / Entfernen ----------
 
-    const sortedBirthdays = Object.entries(birthdays)
-      .map(([userId, data]) => ({
-        userId,
-        month: data.month,
-        day: data.day,
-        monthName: getMonthName(data.month)
-      }))
-      .sort((a, b) => {
-        if (a.month !== b.month) return a.month - b.month;
-        return a.day - b.day;
-      });
-
-    return sortedBirthdays;
-  } catch (error) {
-    logger.error('Error in getAllBirthdays service', {
-      error: error.message,
-      guildId
-    });
-    throw error;
-  }
+export async function saveBirthday(client, guild, userId, day, month) {
+  const ok = await dbSetBirthday(client, guild.id, userId, month, day);
+  if (ok) await refreshBirthdayPanel(client, guild).catch(() => {});
+  return ok;
 }
 
-export async function deleteBirthday(client, guildId, userId) {
-  try {
-    
-    const birthday = await getUserBirthday(client, guildId, userId);
-    
-    if (!birthday) {
-      return {
-        status: 'not_found',
-      };
-    }
-
-    const success = await dbDeleteBirthday(client, guildId, userId);
-    
-    if (!success) {
-      throw new TitanBotError(
-        'Failed to delete birthday from database',
-        ErrorTypes.DATABASE,
-        'Failed to remove your birthday. Please try again.',
-        { userId, guildId }
-      );
-    }
-
-    logger.info('Birthday removed successfully', {
-      userId,
-      guildId
-    });
-
-    return {
-      status: 'removed',
-    };
-  } catch (error) {
-    logger.error('Error in deleteBirthday service', {
-      error: error.message,
-      userId,
-      guildId
-    });
-    throw error;
-  }
+export async function removeBirthday(client, guild, userId) {
+  const birthdays = (await getGuildBirthdays(client, guild.id)) || {};
+  if (!birthdays[userId]) return false;
+  await dbDeleteBirthday(client, guild.id, userId);
+  await refreshBirthdayPanel(client, guild).catch(() => {});
+  return true;
 }
 
-export async function getUpcomingBirthdays(client, guildId, limit = 5) {
-  try {
-    const birthdays = await getGuildBirthdays(client, guildId);
-    
-    if (!birthdays || Object.keys(birthdays).length === 0) {
-      return [];
-    }
+// ---------- Tägliche Gratulation ----------
 
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    
-    const upcomingBirthdays = [];
-    
-    for (const [userId, userData] of Object.entries(birthdays)) {
-      let nextBirthday = new Date(currentYear, userData.month - 1, userData.day);
+async function congratulate(channel, member) {
+  const text = CONGRATS[Math.floor(Math.random() * CONGRATS.length)].replace('{user}', member.toString());
+  const message = await channel.send({
+    content: text,
+    allowedMentions: { users: [member.id] },
+    embeds: [
+      new EmbedBuilder()
+        .setColor(0xFF69B4)
+        .setTitle('🎉 HAPPY BIRTHDAY! 🎂')
+        .setDescription(`Heute feiern wir **${member.displayName}**! Gratuliert im Thread unten. 👇`)
+        .setThumbnail(member.user.displayAvatarURL())
+    ]
+  });
 
-      if (nextBirthday < today) {
-        nextBirthday = new Date(currentYear + 1, userData.month - 1, userData.day);
-      }
-      
-      const daysUntil = Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
-      
-      upcomingBirthdays.push({
-        userId,
-        month: userData.month,
-        day: userData.day,
-        monthName: getMonthName(userData.month),
-        date: nextBirthday,
-        daysUntil
-      });
-    }
-
-    upcomingBirthdays.sort((a, b) => a.daysUntil - b.daysUntil);
-
-    return upcomingBirthdays.slice(0, limit);
-  } catch (error) {
-    logger.error('Error in getUpcomingBirthdays service', {
-      error: error.message,
-      guildId,
-      limit
-    });
-    throw error;
-  }
-}
-
-export async function getTodaysBirthdays(client, guildId) {
-  try {
-    const birthdays = await getGuildBirthdays(client, guildId);
-    const today = new Date();
-    const currentMonth = today.getUTCMonth() + 1;
-    const currentDay = today.getUTCDate();
-
-    const todaysBirthdays = [];
-
-    for (const [userId, userData] of Object.entries(birthdays)) {
-      if (userData.month === currentMonth && userData.day === currentDay) {
-        todaysBirthdays.push({
-          userId,
-          month: userData.month,
-          day: userData.day,
-          monthName: getMonthName(userData.month)
-        });
-      }
-    }
-
-    return todaysBirthdays;
-  } catch (error) {
-    logger.error('Error in getTodaysBirthdays service', {
-      error: error.message,
-      guildId
-    });
-    throw error;
-  }
+  // Channel ist schreibgeschützt → Gratulationen landen im Thread, die Box oben bleibt sichtbar.
+  await message.startThread({ name: `🎉 Gratulationen für ${member.displayName}`.slice(0, 100) }).catch(() => {});
 }
 
 export async function checkBirthdays(client) {
-  const today = new Date();
-  const currentMonth = today.getUTCMonth() + 1;
-  const currentDay = today.getUTCDate();
+  if (!client?.db) return;
+  const today = viennaToday();
+  const todayId = `${today.year}-${today.month}-${today.day}`;
 
-  if (process.env.NODE_ENV !== 'production') {
-    logger.debug(`🎂 Running daily birthday check for UTC: ${currentMonth}/${currentDay}.`);
-  }
-
-  for (const [guildId, guild] of client.guilds.cache) {
+  for (const guild of client.guilds.cache.values()) {
     try {
-      const config = await getGuildConfig(client, guildId);
-      const { birthdayChannelId, birthdayRoleId } = config;
-
-      // A channel is required for announcements; the birthday role is optional.
-      if (!birthdayChannelId) {
-        if (process.env.NODE_ENV !== 'production') {
-          logger.debug(`Skipping birthday check for ${guild.name}: Missing channel config.`);
-        }
-        continue;
-      }
-
-      const channel = await guild.channels.fetch(birthdayChannelId).catch(() => null);
+      const channel = await getPanelChannel(client, guild);
       if (!channel) continue;
 
-      const trackingKey = getBirthdayTrackingKey(guildId);
-      const trackingData = (await client.db.get(trackingKey)) || {};
-      const updatedTrackingData = { ...trackingData };
-      
-      for (const userId of Object.keys(trackingData)) {
-        try {
-          if (birthdayRoleId) {
-            const member = await guild.members.fetch(userId).catch(() => null);
-            if (member && member.roles.cache.has(birthdayRoleId)) {
-              await member.roles.remove(birthdayRoleId, "Birthday role expired");
-            }
-          }
-          delete updatedTrackingData[userId];
-        } catch (error) {
-           logger.error(`Error removing birthday role from ${userId}:`, error);
-        }
+      // Pro Tag nur einmal gratulieren, auch nach einem Neustart.
+      if ((await client.db.get(lastRunKey(guild.id))) === todayId) continue;
+      await client.db.set(lastRunKey(guild.id), todayId);
+
+      const birthdays = (await getGuildBirthdays(client, guild.id)) || {};
+      for (const [userId, data] of Object.entries(birthdays)) {
+        if (data.month !== today.month || celebrationDay(data.month, data.day, today.year) !== today.day) continue;
+        const member = await guild.members.fetch(userId).catch(() => null);
+        if (member) await congratulate(channel, member);
       }
 
-      if (Object.keys(updatedTrackingData).length !== Object.keys(trackingData).length) {
-        await client.db.set(trackingKey, updatedTrackingData);
-      }
-
-      // Use the canonical birthday storage (guild:<id>:birthdays) that set/remove commands write to.
-      const birthdays = (await getGuildBirthdays(client, guildId)) || {};
-      const birthdayMembers = [];
-      for (const [userId, userData] of Object.entries(birthdays)) {
-        if (userData.month === currentMonth && userData.day === currentDay) {
-          const member = await guild.members.fetch(userId).catch(() => null);
-          if (member) {
-            birthdayMembers.push(member);
-            if (birthdayRoleId) {
-              try {
-                await member.roles.add(birthdayRoleId, "Happy Birthday! 🎉");
-                updatedTrackingData[userId] = true;
-              } catch (error) {
-                  logger.error(`Error adding birthday role to ${member.user.tag}:`, error);
-              }
-            }
-          }
-        }
-      }
-
-      if (birthdayMembers.length > 0) {
-        await client.db.set(trackingKey, updatedTrackingData);
-        const mentionList = birthdayMembers.map(m => m.toString()).join(', ');
-        
-        await channel.send({
-          embeds: [{
-            title: '🎉 Happy Birthday! 🎂',
-            description: `A very happy birthday to ${mentionList}! Wishing you an amazing day! 🎈`,
-            color: 0xff69b4,
-            footer: { text: 'Birthday Bot' },
-            timestamp: new Date()
-          }]
-        });
-      }
+      await refreshBirthdayPanel(client, guild);
     } catch (error) {
-      logger.error(`Error processing birthdays for guild ${guildId}:`, error);
+      logger.error('[Geburtstage] Daily check failed', { guildId: guild.id, error: error.message });
     }
   }
 }

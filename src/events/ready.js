@@ -3,6 +3,7 @@ import { logger, startupLog } from "../utils/logger.js";
 import config from "../config/application.js";
 import { reconcileTicketPanels, reconcileVerificationPanels } from "../services/panelHealthService.js";
 import { cleanupCustomVoiceRooms } from "../services/customVoiceCreateService.js";
+import { checkBirthdays } from "../services/birthdayService.js";
 
 export default {
   name: Events.ClientReady,
@@ -18,6 +19,9 @@ export default {
 
       await cleanupCustomVoiceRooms(client);
       startupLog("Custom voice rooms cleaned up");
+
+      // Falls der Bot um Mitternacht offline war: heutige Gratulation nachholen (nur einmal pro Tag).
+      await checkBirthdays(client);
 
       const ticketPanelSummary = await reconcileTicketPanels(client);
       startupLog(
