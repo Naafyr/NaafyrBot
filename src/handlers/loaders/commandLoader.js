@@ -8,6 +8,8 @@ import botConfig from '../../config/bot.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const MAX_COMMANDS = 100;
+// Werden pro Server registriert (sofort sichtbar) statt global.
+const IMMEDIATE_GUILD_COMMANDS = ['refresh', 'serverstats', 'newwelcome', 'youtube', 'rangliste', 'rollenauswahl'];
 const COMMAND_COUNT_WARN_THRESHOLD = 90;
 
 function getSubcommandInfo(commandData) {
@@ -140,7 +142,7 @@ function collectCommandPayloads(client) {
         logger.debug(`Processing command for registration: ${commandName}`);
 
         // Fast-changing admin/setup commands are guild-only so Discord shows updates immediately.
-        if (commandName === 'refresh' || commandName === 'serverstats' || commandName === 'newwelcome' || commandName === 'emojitest' || commandName === 'testchannels-create' || commandName === 'testchannels-delete' || commandName === 'youtube' || commandName === 'rangliste' || commandName === 'rollenauswahl') {
+        if (IMMEDIATE_GUILD_COMMANDS.includes(commandName)) {
             logger.debug(`Skipping /${commandName} in global registration; it is registered per guild`);
             continue;
         }
@@ -299,10 +301,9 @@ export async function registerGuildRefreshCommand(client, guildId, options = {})
         throw new Error('Discord REST client is not available for slash command registration');
     }
 
-    const immediateNames = ['refresh', 'serverstats', 'newwelcome', 'emojitest', 'testchannels-create', 'testchannels-delete', 'youtube', 'rangliste', 'rollenauswahl'];
     const immediatePayloads = [];
 
-    for (const name of immediateNames) {
+    for (const name of IMMEDIATE_GUILD_COMMANDS) {
         const command = client.commands.get(name);
         if (!command?.data || typeof command.data.toJSON !== 'function') {
             throw new Error(`Command /${name} is not loaded`);
@@ -310,26 +311,10 @@ export async function registerGuildRefreshCommand(client, guildId, options = {})
         immediatePayloads.push(command.data.toJSON());
     }
 
+    // Ersetzt die Server-Commands komplett, damit entfernte Commands (z. B. alte Test-Commands) verschwinden.
     const route = `/applications/${clientId}/guilds/${guildId}/commands`;
-    const existing = await client.rest.get(route);
-
-    const merged = [
-        ...existing.filter(command => !immediateNames.includes(command.name)).map(command => ({
-            name: command.name,
-            description: command.description,
-            type: command.type,
-            options: command.options,
-            default_member_permissions: command.default_member_permissions,
-            dm_permission: command.dm_permission,
-            nsfw: command.nsfw,
-            integration_types: command.integration_types,
-            contexts: command.contexts
-        })),
-        ...immediatePayloads
-    ];
-
-    await client.rest.put(route, { body: merged });
-    logger.info(`Registered immediate guild commands: ${immediateNames.map(name => '/' + name).join(', ')} for guild ${guildId}`);
+    await client.rest.put(route, { body: immediatePayloads });
+    logger.info(`Registered immediate guild commands: ${IMMEDIATE_GUILD_COMMANDS.map(name => '/' + name).join(', ')} for guild ${guildId}`);
 }
 
 export async function reloadCommand(client, commandName) {
