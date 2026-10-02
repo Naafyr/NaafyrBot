@@ -140,7 +140,7 @@ function collectCommandPayloads(client) {
         logger.debug(`Processing command for registration: ${commandName}`);
 
         // Fast-changing admin/setup commands are guild-only so Discord shows updates immediately.
-        if (commandName === 'refresh' || commandName === 'serverstats' || commandName === 'newwelcome' || commandName === 'emojitest' || commandName === 'testchannels-create' || commandName === 'testchannels-delete') {
+        if (commandName === 'refresh' || commandName === 'serverstats' || commandName === 'newwelcome' || commandName === 'emojitest' || commandName === 'testchannels-create' || commandName === 'testchannels-delete' || commandName === 'youtube') {
             logger.debug(`Skipping /${commandName} in global registration; it is registered per guild`);
             continue;
         }
@@ -299,7 +299,7 @@ export async function registerGuildRefreshCommand(client, guildId, options = {})
         throw new Error('Discord REST client is not available for slash command registration');
     }
 
-    const immediateNames = ['refresh', 'serverstats', 'newwelcome', 'emojitest', 'testchannels-create', 'testchannels-delete'];
+    const immediateNames = ['refresh', 'serverstats', 'newwelcome', 'emojitest', 'testchannels-create', 'testchannels-delete', 'youtube'];
     const immediatePayloads = [];
 
     for (const name of immediateNames) {
