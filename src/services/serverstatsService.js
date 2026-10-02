@@ -21,6 +21,16 @@ export const COUNTER_TYPE_CONFIG = {
     label: 'Bots Only',
     baseName: 'Bots',
     emoji: '🤖'
+  },
+  online: {
+    label: 'Online',
+    baseName: 'Online',
+    emoji: '🟢'
+  },
+  boosts: {
+    label: 'Boosts',
+    baseName: 'Boosts',
+    emoji: '🚀'
   }
 };
 
@@ -45,11 +55,8 @@ export function getCounterEmoji(type) {
 }
 
 export function formatCounterChannelName(type, count) {
-  const template = botConfig.counters?.defaults?.channelName || '{name}-{count}';
-  const baseName = getCounterBaseName(type);
-  return template
-    .replaceAll('{name}', baseName)
-    .replaceAll('{count}', String(count));
+  const config = getCounterConfig(type);
+  return `${config.emoji} ${config.baseName}: ${count}`;
 }
 
 export function getCounterActionMessage(action, values = {}) {
@@ -79,10 +86,18 @@ export async function getGuildCounterStats(guild) {
   const totalCount = typeof guild.memberCount === 'number' ? guild.memberCount : memberCollection.size;
   const humanCount = Math.max(totalCount - botCount, 0);
 
+  const onlineHumanCount = memberCollection.filter((member) =>
+    !member.user.bot &&
+    member.presence &&
+    member.presence.status !== 'offline'
+  ).size;
+
   return {
     totalCount,
     botCount,
-    humanCount
+    humanCount,
+    onlineHumanCount,
+    boostCount: guild.premiumSubscriptionCount || 0
   };
 }
 
@@ -96,6 +111,10 @@ export async function getCounterCount(guild, type) {
       return stats.botCount;
     case 'members_only':
       return stats.humanCount;
+    case 'online':
+      return stats.onlineHumanCount;
+    case 'boosts':
+      return stats.boostCount;
     default:
       return null;
   }
