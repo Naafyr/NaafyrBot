@@ -14,8 +14,8 @@ export const COUNTER_TYPE_CONFIG = {
   },
   members_only: {
     label: 'Members Only',
-    baseName: 'Members',
-    emoji: '👤'
+    baseName: 'Mitglieder',
+    emoji: '👥'
   },
   bots: {
     label: 'Bots Only',
