@@ -66,13 +66,13 @@ export const GAMES = {
 // Wer eine dieser Rollen hat, sieht die Channels nicht und wird deshalb nicht gepingt.
 export const NOTIFY_OPTIONS = {
   nolive: {
-    name: 'Keine Live-Pings', emoji: '🔴', label: 'Stream-Start', aliases: [],
+    name: 'Keine Live-Pings', emoji: '🔴', label: 'Keine Live-Pings mehr', aliases: [],
     channels: new Set(['🔴┃live']),
     offText: '🔕 **Stream-Start-Pings sind aus.** 🔴┃live ist für dich ausgeblendet.',
     onText: '🔔 **Stream-Start-Pings sind wieder an.** 🔴┃live siehst du wieder.'
   },
   novideo: {
-    name: 'Keine Video-Pings', emoji: '📺', label: 'Neues Video', aliases: [],
+    name: 'Keine Video-Pings', emoji: '📺', label: 'Keine Video-Pings mehr', aliases: [],
     channels: new Set(['📺┃neue-videos', '📱┃neue-shorts']),
     offText: '🔕 **Video-Pings sind aus.** 📺┃neue-videos und 📱┃neue-shorts sind für dich ausgeblendet.',
     onText: '🔔 **Video-Pings sind wieder an.** Neue Videos und Shorts siehst du wieder.'
@@ -237,17 +237,18 @@ export function buildGamesEmbed() {
 
 export function buildNotifyEmbed() {
   return new EmbedBuilder()
-    .setColor(0xF1C40F)
-    .setTitle('🎬 CONTENT')
+    .setColor(0xED4245)
+    .setTitle('🔕 CONTENT – BENACHRICHTIGUNGEN AUSSCHALTEN')
     .setDescription([
-      'Standardmäßig wirst du bei jedem Stream und jedem neuen Video benachrichtigt. 🔔',
+      'Standardmäßig wirst du bei **jedem Stream** und **jedem neuen Video** gepingt. 🔔',
       '',
-      'Klick auf einen Button, wenn du dafür **nicht mehr** benachrichtigt werden willst:',
+      '## ⚠️ Die Buttons schalten Pings AUS!',
+      'Nur drücken, wenn du **KEINE** Benachrichtigungen mehr willst:',
       '',
-      '🔴 **Stream-Start** – keine Pings mehr, wenn Naafyr live geht',
-      '📺 **Neues Video** – keine Pings mehr bei neuen Videos & Shorts',
+      '🔕 **Keine Live-Pings mehr** – kein Ping, wenn Naafyr live geht',
+      '🔕 **Keine Video-Pings mehr** – kein Ping bei neuen Videos & Shorts',
       '',
-      '🔁 Nochmal klicken → Benachrichtigung wieder an'
+      '🔁 Nochmal drücken → Benachrichtigungen wieder **AN**'
     ].join('\n'));
 }
 
@@ -257,8 +258,8 @@ export function buildNotifyButtons() {
       new ButtonBuilder()
         .setCustomId(`rolle:${key}`)
         .setLabel(option.label)
-        .setEmoji(option.emoji)
-        .setStyle(ButtonStyle.Secondary)
+        .setEmoji('🔕')
+        .setStyle(ButtonStyle.Danger)
     )
   )];
 }
