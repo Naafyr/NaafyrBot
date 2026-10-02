@@ -4,6 +4,7 @@ import { createEmbed, successEmbed } from '../../utils/embeds.js';
 import { logger } from '../../utils/logger.js';
 
 import { handleCreate } from './modules/serverstats_create.js';
+import { handleSetup } from './modules/serverstats_setup.js';
 import { handleList } from './modules/serverstats_list.js';
 import { handleUpdate } from './modules/serverstats_update.js';
 import { handleDelete } from './modules/serverstats_delete.js';
@@ -15,6 +16,11 @@ export default {
         .setName("serverstats")
         .setDescription("Manage server statistics that track member counts and channel data")
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName("setup")
+                .setDescription("Erstellt die Server-Statistik automatisch")
+        )
         .addSubcommand(subcommand =>
             subcommand
                 .setName("create")
@@ -91,6 +97,9 @@ export default {
         const subcommand = interaction.options.getSubcommand();
 
         switch (subcommand) {
+            case "setup":
+                await handleSetup(interaction, client);
+                break;
             case "create":
                 await handleCreate(interaction, client);
                 break;
