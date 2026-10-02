@@ -9,6 +9,7 @@ import { initializeDatabase } from './utils/database.js';
 import { getGuildConfig } from './services/config/guildConfig.js';
 import { getServerCounters, saveServerCounters, updateCounter } from './services/serverstatsService.js';
 import { checkTwitchLive } from './services/twitchLiveService.js';
+import { checkYouTubeUploads } from './services/youtubeUploadService.js';
 import { logger, startupLog, shutdownLog } from './utils/logger.js';
 import { checkBirthdays } from './services/birthdayService.js';
 import { checkGiveaways } from './services/giveawayService.js';
@@ -266,6 +267,7 @@ class TitanBot extends Client {
     cron.schedule('* * * * *', runSafeTask('giveaway_check', () => checkGiveaways(this)));
     cron.schedule('*/5 * * * *', runSafeTask('counter_update', () => this.updateAllCounters()));
     cron.schedule('* * * * *', runSafeTask('twitch_live_check', () => checkTwitchLive(this)));
+    cron.schedule('*/5 * * * *', runSafeTask('youtube_upload_check', () => checkYouTubeUploads(this)));
   }
 
   async updateAllCounters() {
