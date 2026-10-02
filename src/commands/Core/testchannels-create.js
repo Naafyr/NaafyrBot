@@ -8,16 +8,15 @@ const CATEGORY_NAME = '🧪 Test-Channel-Varianten';
 const TEST_TOPIC = 'NaafyrBot temporary channel style test';
 
 const TEST_CHANNEL_NAMES = [
-    '📜│regeln',
-    '🔴│live',
-    '📺│neue-videos',
-    '✂️│clips-und-highlights'
+    '📜【-test-】',
+    '📜│test',
+    '📜┃test'
 ];
 
 export default {
     data: new SlashCommandBuilder()
         .setName('testchannels-create')
-        .setDescription('Erstellt eine Vorschau der ausgewählten Kanalnamen')
+        .setDescription('Erstellt drei Test-Channels für Kanalnamen-Styles')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
     async execute(interaction) {
@@ -37,7 +36,7 @@ export default {
         const category = await guild.channels.create({
             name: CATEGORY_NAME,
             type: ChannelType.GuildCategory,
-            reason: 'Temporary real-name channel style preview'
+            reason: 'Temporary channel-name style test'
         });
 
         let created = 0;
@@ -49,22 +48,21 @@ export default {
                     type: ChannelType.GuildText,
                     parent: category.id,
                     topic: TEST_TOPIC,
-                    reason: 'Temporary real-name channel style preview'
+                    reason: 'Temporary channel-name style test'
                 });
                 created += 1;
             }
         } catch (error) {
             return interaction.editReply(
-                `⚠️ Vorschau erstellt, aber nur **${created}/4** Channels konnten angelegt werden. Fehler: ${error.message}`
+                `⚠️ Test-Kategorie erstellt, aber nur **${created}/3** Channels konnten angelegt werden. Fehler: ${error.message}`
             );
         }
 
         return interaction.editReply(
-            '✅ **4 Vorschau-Channels erstellt.**\n' +
-            '📜│regeln\n' +
-            '🔴│live\n' +
-            '📺│neue-videos\n' +
-            '✂️│clips-und-highlights\n\n' +
+            '✅ **3 Test-Channels erstellt.**\n' +
+            '📜【-test-】\n' +
+            '📜│test\n' +
+            '📜┃test\n\n' +
             'Zum Aufräumen: **/testchannels-delete**'
         );
     }
