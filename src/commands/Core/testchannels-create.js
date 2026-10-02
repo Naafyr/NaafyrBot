@@ -8,76 +8,16 @@ const CATEGORY_NAME = '🧪 Test-Channel-Varianten';
 const TEST_TOPIC = 'NaafyrBot temporary channel style test';
 
 const TEST_CHANNEL_NAMES = [
-    '📜 | test',
-    '🔴 | test',
-    '📺 | test',
-    '✂️ | test',
-
-    '📜 │ test',
-    '🔴 │ test',
-    '📺 │ test',
-    '✂️ │ test',
-
-    '📜 ┃ test',
-    '🔴 ┃ test',
-    '📺 ┃ test',
-    '✂️ ┃ test',
-
-    '📜 • test',
-    '🔴 • test',
-    '📺 • test',
-    '✂️ • test',
-
-    '📜 · test',
-    '🔴 · test',
-    '📺 · test',
-    '✂️ · test',
-
-    '📜 ◆ test',
-    '🔴 ◆ test',
-    '📺 ◆ test',
-    '✂️ ◆ test',
-
-    '📜 ◇ test',
-    '🔴 ◇ test',
-    '📺 ◇ test',
-    '✂️ ◇ test',
-
-    '📜 ✦ test',
-    '🔴 ✦ test',
-    '📺 ✦ test',
-    '✂️ ✦ test',
-
-    '📜 [ test ]',
-    '🔴 [ test ]',
-    '📺 [ test ]',
-    '✂️ [ test ]',
-
-    '📜 【 test 】',
-    '🔴 【 test 】',
-    '📺 【 test 】',
-    '✂️ 【 test 】',
-
-    '📜 ─ test',
-    '🔴 ─ test',
-    '📺 ─ test',
-    '✂️ ─ test',
-
-    '📜 › test',
-    '🔴 › test',
-    '📺 › test',
-    '✂️ › test',
-
-    '📜 » test',
-    '🔴 » test',
-    '📺 » test',
-    '✂️ » test'
+    '📜│regeln',
+    '🔴│live',
+    '📺│neue-videos',
+    '✂️│clips-und-highlights'
 ];
 
 export default {
     data: new SlashCommandBuilder()
         .setName('testchannels-create')
-        .setDescription('Erstellt 52 temporäre Test-Channels für Kanalnamen-Styles')
+        .setDescription('Erstellt eine Vorschau der ausgewählten Kanalnamen')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
     async execute(interaction) {
@@ -97,7 +37,7 @@ export default {
         const category = await guild.channels.create({
             name: CATEGORY_NAME,
             type: ChannelType.GuildCategory,
-            reason: 'Temporary channel-name style test'
+            reason: 'Temporary real-name channel style preview'
         });
 
         let created = 0;
@@ -109,19 +49,22 @@ export default {
                     type: ChannelType.GuildText,
                     parent: category.id,
                     topic: TEST_TOPIC,
-                    reason: 'Temporary channel-name style test'
+                    reason: 'Temporary real-name channel style preview'
                 });
                 created += 1;
             }
         } catch (error) {
             return interaction.editReply(
-                `⚠️ Test-Kategorie erstellt, aber nur **${created}/52** Channels konnten angelegt werden. Fehler: ${error.message}`
+                `⚠️ Vorschau erstellt, aber nur **${created}/4** Channels konnten angelegt werden. Fehler: ${error.message}`
             );
         }
 
         return interaction.editReply(
-            '✅ **52 Test-Channels erstellt.**\n' +
-            'Sie liegen gesammelt in **🧪 Test-Channel-Varianten**.\n' +
+            '✅ **4 Vorschau-Channels erstellt.**\n' +
+            '📜│regeln\n' +
+            '🔴│live\n' +
+            '📺│neue-videos\n' +
+            '✂️│clips-und-highlights\n\n' +
             'Zum Aufräumen: **/testchannels-delete**'
         );
     }
