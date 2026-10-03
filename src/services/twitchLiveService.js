@@ -244,38 +244,51 @@ function sameStream(message, stream) {
   return Math.abs(messageStart - twitchStart) < 120_000;
 }
 
+// Merkt sich die aktive Live-Nachricht (ID + Startzeit). So wird pro Stream nur EINMAL gepostet,
+// auch wenn die Nachricht beim Durchsuchen mal nicht gefunden wird.
+async function loadActiveMessage(client, channel, recordKey) {
+  const record = await client.db?.get?.(recordKey).catch(() => null);
+  let message = record?.messageId ? await channel.messages.fetch(record.messageId).catch(() => null) : null;
+  if (!message) message = await findActiveBotMessage(channel, client.user.id);
+  const isLive = message?.embeds?.[0]?.footer?.text === ACTIVE_FOOTER;
+  return { record: record && typeof record === 'object' ? record : null, message: isLive ? message : null };
+}
+
 async function handleGuild(client, guild, stream, config) {
   const channel = findLiveChannel(guild);
   if (!channel) return;
 
-  const activeMessage = await findActiveBotMessage(channel, client.user.id);
+  const recordKey = `guild:${guild.id}:twitch:liveMessage`;
   const offlineKey = `guild:${guild.id}:twitch:offlineSince`;
   const gamesKey = `guild:${guild.id}:twitch:games`;
-  const offlineSince = activeMessage ? Number(await client.db?.get?.(offlineKey).catch(() => null)) || null : null;
+  const { record, message: activeMessage } = await loadActiveMessage(client, channel, recordKey);
+  const openRecord = Boolean(record && !record.ended);
+  const offlineSince = activeMessage || openRecord ? Number(await client.db?.get?.(offlineKey).catch(() => null)) || null : null;
 
   if (stream) {
-    // Kurzer Aussetzer (innerhalb des Puffers) → gleicher Stream, kein neuer Ping, Startzeit bleibt.
-    // Nach einem Aussetzer hat Twitch eine neue Startzeit → die merken wir uns, damit es derselbe Stream bleibt.
-    const resumeKey = `guild:${guild.id}:twitch:resumedStart`;
-    const resumed = Boolean(activeMessage && offlineSince);
-    const resumedBefore = activeMessage && (await client.db?.get?.(resumeKey).catch(() => null)) === stream.started_at;
-    if (activeMessage && (resumed || resumedBefore || sameStream(activeMessage, stream))) {
-      if (resumed) {
-        await client.db?.delete?.(offlineKey).catch(() => {});
-        await client.db?.set?.(resumeKey, stream.started_at).catch(() => {});
-      }
-      const continued = resumed || resumedBefore;
-      const originalStart = continued ? activeMessage.embeds[0]?.timestamp : null;
+    // Eine noch laufende Live-Box (jünger als 24 Std.) gehört IMMER zum aktuellen Stream:
+    // nur bearbeiten, nie neu posten. Startzeit der Box bleibt (auch nach Aussetzern).
+    const boxStart = activeMessage?.embeds?.[0]?.timestamp;
+    const boxFresh = boxStart && Date.now() - new Date(boxStart).getTime() < 24 * 3_600_000;
+    if (activeMessage && (boxFresh || sameStream(activeMessage, stream))) {
+      if (offlineSince) await client.db?.delete?.(offlineKey).catch(() => {});
       await rememberGame(client, gamesKey, stream.game_name);
-      const newEmbed = buildLiveEmbed(stream, config.channel, originalStart);
       await activeMessage.edit({
-        embeds: [newEmbed],
+        embeds: [buildLiveEmbed(stream, config.channel, boxStart || null)],
         components: [buildStreamButton(config.channel)]
       });
       return;
     }
 
+    // Sicherung: Es gibt eine noch nicht beendete Live-Nachricht (< 24 Std.) → nicht nochmal pingen.
+    if (record && !record.ended && Date.now() - (record.postedAt || 0) < 24 * 3_600_000) {
+      logger.warn('[TwitchLive] Live-Nachricht nicht gefunden, poste aber nicht doppelt', { guildId: guild.id });
+      reportProblem('🔴 Twitch-Live', 'Die Live-Nachricht wurde nicht gefunden (gelöscht oder keine Leserechte im Live-Channel?). Es wird nicht nochmal gepostet.');
+      return;
+    }
+
     if (activeMessage) {
+      await client.db?.set?.(recordKey, { ...(record || {}), ended: true }).catch(() => {});
       const endedEmbed = buildEndedEmbed(activeMessage.embeds[0], new Date(), await loadGames(client, gamesKey));
       await activeMessage.edit({
         content: endedContent(endedEmbed),
@@ -287,13 +300,14 @@ async function handleGuild(client, guild, stream, config) {
 
     await client.db?.set?.(gamesKey, stream.game_name ? [stream.game_name] : []).catch(() => {});
 
-    // Pingt alle, die den Channel sehen. Wer "Keine Stream-Pings" hat, sieht ihn nicht.
-    await channel.send({
+    // Pingt alle, die den Channel sehen. Wer "Keine Live-Pings" hat, sieht ihn nicht.
+    const sent = await channel.send({
       content: '@everyone 🔴 **Naafyr ist jetzt live – komm vorbei!**',
       allowedMentions: { parse: ['everyone'] },
       embeds: [buildLiveEmbed(stream, config.channel)],
       components: [buildStreamButton(config.channel)]
     });
+    await client.db?.set?.(recordKey, { messageId: sent.id, postedAt: Date.now(), ended: false }).catch(() => {});
 
     logger.info('[TwitchLive] Live announcement created', {
       guildId: guild.id,
@@ -304,7 +318,7 @@ async function handleGuild(client, guild, stream, config) {
     return;
   }
 
-  if (activeMessage) {
+  if (activeMessage || openRecord) {
     // Erst nach 15 Min. am Stück offline als beendet werten (Twitch-Aussetzer, Stream-Absturz).
     const now = Date.now();
     if (!offlineSince) {
@@ -313,6 +327,10 @@ async function handleGuild(client, guild, stream, config) {
     }
     if (now - offlineSince < OFFLINE_GRACE_MS) return;
     await client.db?.delete?.(offlineKey).catch(() => {});
+    await client.db?.set?.(recordKey, { ...(record || {}), ended: true }).catch(() => {});
+
+    // Nachricht nicht lesbar → nur als beendet merken.
+    if (!activeMessage) return;
 
     // Ende = Zeitpunkt, ab dem der Stream wirklich weg war.
     const endedEmbed = buildEndedEmbed(activeMessage.embeds[0], new Date(offlineSince), await loadGames(client, gamesKey));

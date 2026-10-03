@@ -6,6 +6,7 @@ import { cleanupCustomVoiceRooms } from "../services/customVoiceCreateService.js
 import { checkBirthdays } from "../services/birthdayService.js";
 import { sortCategories } from "../utils/categoryOrder.js";
 import { initStatusReporter } from "../utils/statusReporter.js";
+import { migrateOldWelcomeMessages } from "../utils/welcomeMigration.js";
 
 export default {
   name: Events.ClientReady,
@@ -20,6 +21,7 @@ export default {
       startupLog(`Loaded ${client.commands.size} commands`);
 
       initStatusReporter(client);
+      migrateOldWelcomeMessages(client).catch(() => {}); // läuft im Hintergrund
       await cleanupCustomVoiceRooms(client);
       startupLog("Custom voice rooms cleaned up");
 
