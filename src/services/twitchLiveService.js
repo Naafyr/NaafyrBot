@@ -254,6 +254,42 @@ async function loadActiveMessage(client, channel, recordKey) {
   return { record: record && typeof record === 'object' ? record : null, message: isLive ? message : null };
 }
 
+// Einmalig beim Start: alle Bot-Nachrichten im Live-Channel löschen außer der neuesten (Aufräumen nach dem Spam-Fehler).
+export async function cleanupLiveChannelOnce(client) {
+  for (const guild of client.guilds.cache.values()) {
+    const doneKey = `guild:${guild.id}:migration:liveCleanup`;
+    try {
+      if (await client.db?.get?.(doneKey)) continue;
+      const channel = findLiveChannel(guild);
+      if (!channel) continue;
+      const own = [];
+      let before;
+      for (let page = 0; page < 10; page++) {
+        const batch = await channel.messages.fetch({ limit: 100, ...(before ? { before } : {}) });
+        if (batch.size === 0) break;
+        own.push(...batch.filter(message => message.author.id === client.user.id).values());
+        before = batch.last().id;
+      }
+      own.sort((a, b) => b.createdTimestamp - a.createdTimestamp);
+      const [keep, ...remove] = own;
+      // Jünger als 14 Tage → Sammel-Löschung, ältere einzeln (Discord-Regel).
+      const cutoff = Date.now() - 13 * 86_400_000;
+      const recent = remove.filter(message => message.createdTimestamp > cutoff);
+      for (let i = 0; i < recent.length; i += 100) {
+        const chunk = recent.slice(i, i + 100);
+        if (chunk.length === 1) await chunk[0].delete().catch(() => {});
+        else await channel.bulkDelete(chunk.map(message => message.id)).catch(() => {});
+      }
+      for (const message of remove.filter(message => message.createdTimestamp <= cutoff)) await message.delete().catch(() => {});
+      if (keep) await client.db?.set?.(`guild:${guild.id}:twitch:liveMessage`, { messageId: keep.id, postedAt: keep.createdTimestamp, ended: keep.embeds?.[0]?.footer?.text !== ACTIVE_FOOTER }).catch(() => {});
+      await client.db?.set?.(doneKey, true);
+      logger.info('[TwitchLive] Live-Channel aufgeräumt', { guildId: guild.id, deleted: remove.length });
+    } catch (error) {
+      logger.warn('[TwitchLive] Aufräumen fehlgeschlagen', { guildId: guild.id, error: error.message });
+    }
+  }
+}
+
 // Doppelte Live-Boxen (z. B. vom alten Fehler) löschen – nur eigene, die aktive bleibt.
 async function deleteDuplicateLiveMessages(channel, keepId, botId) {
   const messages = await channel.messages.fetch({ limit: 50 }).catch(() => null);

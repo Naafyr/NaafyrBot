@@ -7,6 +7,7 @@ import { checkBirthdays } from "../services/birthdayService.js";
 import { sortCategories } from "../utils/categoryOrder.js";
 import { initStatusReporter } from "../utils/statusReporter.js";
 import { migrateOldWelcomeMessages } from "../utils/welcomeMigration.js";
+import { cleanupLiveChannelOnce } from "../services/twitchLiveService.js";
 
 export default {
   name: Events.ClientReady,
@@ -22,6 +23,7 @@ export default {
 
       initStatusReporter(client);
       migrateOldWelcomeMessages(client).catch(() => {}); // läuft im Hintergrund
+      cleanupLiveChannelOnce(client).catch(() => {});
       await cleanupCustomVoiceRooms(client);
       startupLog("Custom voice rooms cleaned up");
 
