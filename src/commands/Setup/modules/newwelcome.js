@@ -8,12 +8,12 @@ import {
     SlashCommandBuilder
 } from 'discord.js';
 
-import { updateWelcomeConfig } from '../../utils/database.js';
-import { patchGuildConfig } from '../../services/config/guildConfig.js';
-import { InteractionHelper } from '../../utils/interactionHelper.js';
-import { replyUserError, ErrorTypes } from '../../utils/errorHandler.js';
-import { logger } from '../../utils/logger.js';
-import { sortCategories } from '../../utils/categoryOrder.js';
+import { updateWelcomeConfig } from '../../../utils/database.js';
+import { patchGuildConfig } from '../../../services/config/guildConfig.js';
+import { InteractionHelper } from '../../../utils/interactionHelper.js';
+import { replyUserError, ErrorTypes } from '../../../utils/errorHandler.js';
+import { logger } from '../../../utils/logger.js';
+import { sortCategories } from '../../../utils/categoryOrder.js';
 
 async function getOrCreateVerifiedRole(guild) {
     let role = guild.roles.cache.find(

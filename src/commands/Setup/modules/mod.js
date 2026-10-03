@@ -11,11 +11,11 @@ import {
   ensureModLogChannel,
   ensureTestChannel,
   removeDiscordDefaults
-} from '../../services/moderationSetupService.js';
-import { InteractionHelper } from '../../utils/interactionHelper.js';
-import { replyUserError, ErrorTypes } from '../../utils/errorHandler.js';
-import { logger } from '../../utils/logger.js';
-import { currentCategoryOrder, sortCategories } from '../../utils/categoryOrder.js';
+} from '../../../services/moderationSetupService.js';
+import { InteractionHelper } from '../../../utils/interactionHelper.js';
+import { replyUserError, ErrorTypes } from '../../../utils/errorHandler.js';
+import { logger } from '../../../utils/logger.js';
+import { currentCategoryOrder, sortCategories } from '../../../utils/categoryOrder.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -64,7 +64,7 @@ export default {
         `💾 Backups 4x am Tag in ${backupChannel}`,
         afkChannel ? `😴 AFK: wer 30 Min. nichts sagt, landet in ${afkChannel}` : '⚠️ AFK-Channel konnte nicht eingerichtet werden.',
         ...(removed.length > 0 ? [`🗑️ Discord-Standard entfernt: ${removed.join(', ')}`] : []),
-        ...(keptCurrent ? ['ℹ️ Den Channel, in dem du gerade bist, habe ich nicht gelöscht. Führ `/mod setup` nochmal in 🧪┃test aus, dann ist er weg.'] : []),
+        ...(keptCurrent ? ['ℹ️ Den Channel, in dem du gerade bist, habe ich nicht gelöscht. Führ `/setup moderation` nochmal in 🧪┃test aus, dann ist er weg.'] : []),
         ...(notSorted.length > 0 ? [`⚠️ Diese Kategorien konnte ich nicht verschieben (Bot hat dort keinen Zugriff): ${notSorted.join(', ')}`] : []),
         `📂 **Reihenfolge jetzt:** ${currentCategoryOrder(guild).map((name, index) => `${index + 1}. ${name}`).join(' · ')}`,
         '',

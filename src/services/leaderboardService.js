@@ -352,7 +352,7 @@ export async function updateLeaderboards(client) {
 
   for (const guild of client.guilds.cache.values()) {
     try {
-      // Nur Server, auf denen /rangliste setup ausgeführt wurde.
+      // Nur Server, auf denen /setup rangliste ausgeführt wurde.
       const ref = await client.db.get(messageKey(guild.id));
       if (!ref?.channelId) continue;
 

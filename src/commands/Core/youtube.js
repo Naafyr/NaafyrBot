@@ -15,7 +15,7 @@ function describe(result, { label, channelName }) {
     case 'already_posted':
       return `✅ ${label}: Das aktuellste wurde bereits gepostet.`;
     case 'channel_missing':
-      return `⚠️ ${label}: Der Channel **${channelName}** wurde nicht gefunden. Führe \`/newwelcome setup\` aus.`;
+      return `⚠️ ${label}: Der Channel **${channelName}** wurde nicht gefunden. Führe \`/setup willkommen\` aus.`;
     default:
       return `ℹ️ ${label}: Nichts gefunden.`;
   }

@@ -10,10 +10,10 @@ import {
   flushLeaderboard,
   postLeaderboardMessages,
   syncLeaderboardRoles
-} from '../../services/leaderboardService.js';
-import { InteractionHelper } from '../../utils/interactionHelper.js';
-import { replyUserError, ErrorTypes } from '../../utils/errorHandler.js';
-import { logger } from '../../utils/logger.js';
+} from '../../../services/leaderboardService.js';
+import { InteractionHelper } from '../../../utils/interactionHelper.js';
+import { replyUserError, ErrorTypes } from '../../../utils/errorHandler.js';
+import { logger } from '../../../utils/logger.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -45,7 +45,7 @@ export default {
       if (!channel) {
         return await replyUserError(interaction, {
           type: ErrorTypes.CONFIGURATION,
-          message: 'Der Channel **🏆┃leaderboard** wurde nicht gefunden. Führe zuerst `/newwelcome setup` aus.'
+          message: 'Der Channel **🏆┃leaderboard** wurde nicht gefunden. Führe zuerst `/setup willkommen` aus.'
         });
       }
 

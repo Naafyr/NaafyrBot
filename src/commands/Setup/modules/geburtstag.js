@@ -4,10 +4,10 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder
 } from 'discord.js';
-import { buildBirthdayPanel, savePanelRef } from '../../services/birthdayService.js';
-import { InteractionHelper } from '../../utils/interactionHelper.js';
-import { replyUserError, ErrorTypes } from '../../utils/errorHandler.js';
-import { logger } from '../../utils/logger.js';
+import { buildBirthdayPanel, savePanelRef } from '../../../services/birthdayService.js';
+import { InteractionHelper } from '../../../utils/interactionHelper.js';
+import { replyUserError, ErrorTypes } from '../../../utils/errorHandler.js';
+import { logger } from '../../../utils/logger.js';
 
 const CHANNEL_NAME = '🎂┃geburtstage';
 const COMMUNITY_CATEGORY = '──── 💬 COMMUNITY 💬 ────';

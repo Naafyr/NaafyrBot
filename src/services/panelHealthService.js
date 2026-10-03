@@ -90,7 +90,7 @@ export async function reconcileVerificationPanels(client) {
             } else if (panelStatus.reason === 'panel_deleted') {
                 summary.deletedPanels += 1;
                 logger.warn(
-                    `Verification panel deleted for guild ${guild.id} (${guild.name}) — repost with /newwelcome setup`,
+                    `Verification panel deleted for guild ${guild.id} (${guild.name}) — repost with /setup willkommen`,
                 );
             }
         } catch (error) {

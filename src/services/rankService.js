@@ -99,7 +99,7 @@ export function rankFor({ days, messages, voiceMinutes }) {
 // Alle 10 Min.: richtigen Rang vergeben (nur Verifizierte) und passende Trenner setzen.
 export async function syncRanks(client, guild) {
   const rankRoles = RANKS.map(rank => findRole(guild, rank.name));
-  if (rankRoles.some(role => !role)) return; // /rollen setup noch nicht gelaufen
+  if (rankRoles.some(role => !role)) return; // /setup rollen noch nicht gelaufen
 
   const verified = findVerifiedRole(guild);
   const botTop = guild.members.me.roles.highest.position;

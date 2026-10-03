@@ -3,11 +3,11 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder
 } from 'discord.js';
-import { RANKS, VIP_ROLE, setupRoles, setupVipArea, syncRanks } from '../../services/rankService.js';
-import { InteractionHelper } from '../../utils/interactionHelper.js';
-import { replyUserError, ErrorTypes } from '../../utils/errorHandler.js';
-import { logger } from '../../utils/logger.js';
-import { sortCategories } from '../../utils/categoryOrder.js';
+import { RANKS, VIP_ROLE, setupRoles, setupVipArea, syncRanks } from '../../../services/rankService.js';
+import { InteractionHelper } from '../../../utils/interactionHelper.js';
+import { replyUserError, ErrorTypes } from '../../../utils/errorHandler.js';
+import { logger } from '../../../utils/logger.js';
+import { sortCategories } from '../../../utils/categoryOrder.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -45,7 +45,7 @@ export default {
         '',
         ...(created.length > 0 ? [`🆕 Neu angelegt: ${created.join(', ')}`] : []),
         ...(vipCreated.length > 0 ? [`💎 VIP-Bereich: ${vipCreated.join(', ')}`] : ['💎 VIP-Bereich war schon da.']),
-        ...(teamSkipped ? ['', '⚠️ Team-Trenner fehlt: Zieh die **Bot-Rolle** in den Server-Einstellungen ganz nach oben und führ `/rollen setup` nochmal aus.'] : []),
+        ...(teamSkipped ? ['', '⚠️ Team-Trenner fehlt: Zieh die **Bot-Rolle** in den Server-Einstellungen ganz nach oben und führ `/setup rollen` nochmal aus.'] : []),
         '',
         'ℹ️ Ränge werden alle 10 Minuten automatisch aktualisiert.'
       ];
