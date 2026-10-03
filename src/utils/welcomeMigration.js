@@ -3,12 +3,14 @@ import { getWelcomeConfig } from './database.js';
 import { logger } from './logger.js';
 
 // Einmalig: alte Willkommens-Nachrichten "🐺 Rudel #3" → "🧭 Reisender #3" (Taverne statt Rudel).
-const OLD = '🐺 **Rudel #';
-const NEW = '🧭 **Reisender #';
+// Erkennt auch Varianten ohne Fett/Emoji, z. B. "Rudel #3", "🐺 Rudelmitglied #3".
+const OLD = /(?:🐺[ \t]*)?(\*\*)?[ \t]*Rudel(?:mitglied)?[ \t]*#[ \t]*(\d+)[ \t]*(\*\*)?/gu;
+const NEW = '🧭 **Reisender #$2**';
+const fix = text => (typeof text === 'string' ? text.replace(OLD, NEW) : text);
 
 export async function migrateOldWelcomeMessages(client) {
   for (const guild of client.guilds.cache.values()) {
-    const doneKey = `guild:${guild.id}:migration:rudel`;
+    const doneKey = `guild:${guild.id}:migration:rudel2`;
     try {
       if (await client.db?.get?.(doneKey)) continue;
       const channelId = (await getWelcomeConfig(client, guild.id))?.channelId;
@@ -23,10 +25,18 @@ export async function migrateOldWelcomeMessages(client) {
         if (batch.size === 0) break;
         for (const message of batch.values()) {
           if (message.author.id !== client.user.id) continue;
-          const embed = message.embeds?.[0];
-          if (!embed?.description?.includes(OLD)) continue;
-          const updated = EmbedBuilder.from(embed).setDescription(embed.description.replaceAll(OLD, NEW));
-          await message.edit({ embeds: [updated, ...message.embeds.slice(1)] }).then(() => edited++).catch(() => {});
+          const embeds = message.embeds || [];
+          const changedEmbeds = embeds.map(embed => {
+            const builder = EmbedBuilder.from(embed);
+            if (embed.description) builder.setDescription(fix(embed.description));
+            if (embed.title) builder.setTitle(fix(embed.title));
+            return builder;
+          });
+          const newContent = fix(message.content);
+          const changed = newContent !== message.content
+            || embeds.some((embed, i) => changedEmbeds[i].data.description !== (embed.description ?? undefined) || changedEmbeds[i].data.title !== (embed.title ?? undefined));
+          if (!changed) continue;
+          await message.edit({ ...(message.content ? { content: newContent } : {}), embeds: changedEmbeds }).then(() => edited++).catch(() => {});
         }
         before = batch.last().id;
       }
