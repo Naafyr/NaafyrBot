@@ -3,7 +3,7 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder
 } from 'discord.js';
-import { RANKS, VIP_ROLE, ensurePromotionChannel, setupRoles, setupVipArea, syncRanks } from '../../../services/rankService.js';
+import { RANKS, VIP_ROLE, setupRoles, setupVipArea, syncRanks } from '../../../services/rankService.js';
 import { InteractionHelper } from '../../../utils/interactionHelper.js';
 import { replyUserError, ErrorTypes } from '../../../utils/errorHandler.js';
 import { logger } from '../../../utils/logger.js';
@@ -34,9 +34,7 @@ export default {
       }
 
       const { created, teamSkipped, sortError, blocked } = await setupRoles(guild);
-      const vipCreated = await setupVipArea(guild);
-      const promo = await ensurePromotionChannel(guild);
-      await sortCategories(guild);
+      const vipCreated = await setupVipArea(guild);      await sortCategories(guild);
       await syncRanks(client, guild);
 
       const lines = [
@@ -45,9 +43,7 @@ export default {
         `${VIP_ROLE.name} – vergibst du selbst (= VIP)`,
         '',
         ...(created.length > 0 ? [`🆕 Neu angelegt: ${created.join(', ')}`] : []),
-        ...(vipCreated.length > 0 ? [`💎 VIP-Bereich: ${vipCreated.join(', ')}`] : ['💎 VIP-Bereich war schon da.']),
-        `🍻 Aufstiege werden in ${promo.channel} verkündet${promo.created ? ' (neu)' : ''}.`,
-        ...(sortError ? ['', `❌ Sortieren fehlgeschlagen: ${sortError}`] : []),
+        ...(vipCreated.length > 0 ? [`💎 VIP-Bereich: ${vipCreated.join(', ')}`] : ['💎 VIP-Bereich war schon da.']),        ...(sortError ? ['', `❌ Sortieren fehlgeschlagen: ${sortError}`] : []),
         ...(blocked?.length ? ['', `⚠️ Diese Rollen stehen **über der Bot-Rolle** und können nicht einsortiert werden: ${blocked.join(', ')}`] : []),
         ...(teamSkipped ? ['', '⚠️ Team-Trenner fehlt: Zieh die **Bot-Rolle** in den Server-Einstellungen ganz nach oben und führ `/setup rollen` nochmal aus.'] : []),
         '',

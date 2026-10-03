@@ -157,7 +157,6 @@ export async function syncRanks(client, guild) {
   const groups = groupRoles(guild);
   const separators = Object.fromEntries(Object.keys(SEPARATORS).map(key => [key, findSeparator(guild, key)]));
 
-  const promotions = [];
   for (const member of guild.members.cache.values()) {
     if (member.user.bot) continue;
     const add = [];
@@ -175,12 +174,6 @@ export async function syncRanks(client, guild) {
       voiceMinutes: voice[member.id] || 0
     }) : null;
     RANKS.forEach((rank, index) => want(rankRoles[index], rank === target));
-
-    // Aufstieg verkünden – nur wenn vorher schon ein (niedrigerer) Rang da war.
-    const previousIndex = rankRoles.findLastIndex(role => member.roles.cache.has(role.id));
-    const targetIndex = target ? RANKS.indexOf(target) : -1;
-    if (previousIndex >= 0 && targetIndex > previousIndex) promotions.push({ member, rank: target });
-
     for (const [key, roles] of Object.entries(groups)) {
       if (key === 'team' && roles.some(role => role.position >= botTop)) continue;
       const hasGroupRole = roles.some(role => member.roles.cache.has(role.id))
@@ -191,40 +184,6 @@ export async function syncRanks(client, guild) {
     if (add.length) await member.roles.add(add, 'Ränge').catch(() => {});
     if (remove.length) await member.roles.remove(remove, 'Ränge').catch(() => {});
   }
-
-  const promoChannel = findPromotionChannel(guild);
-  for (const { member, rank } of promotions) {
-    await promoChannel?.send({
-      content: `${rank.name.split(' ')[0]} <@${member.id}> ist aufgestiegen und ist jetzt **${rank.name.slice(rank.name.indexOf(' ') + 1)}**! Prost! 🍻`,
-      allowedMentions: { users: [member.id] }
-    }).catch(() => {});
-  }
-}
-
-export const PROMOTION_CHANNEL_NAME = '🍻┃aufstiege';
-const findPromotionChannel = guild => guild.channels.cache.find(channel =>
-  channel.type === ChannelType.GuildText && channel.name === PROMOTION_CHANNEL_NAME) || null;
-
-// Channel für Rang-Aufstiege in COMMUNITY: alle lesen, nur der Bot schreibt.
-export async function ensurePromotionChannel(guild) {
-  const existing = findPromotionChannel(guild);
-  if (existing) return { channel: existing, created: false };
-  const community = guild.channels.cache.find(channel =>
-    channel.type === ChannelType.GuildCategory && channel.name.toUpperCase().includes('COMMUNITY'));
-  const channel = await guild.channels.create({
-    name: PROMOTION_CHANNEL_NAME,
-    type: ChannelType.GuildText,
-    parent: community?.id ?? null,
-    topic: 'Wer in der Kneipe aufsteigt, steht hier 🍻',
-    reason: 'NaafyrBot Rang-Aufstiege'
-  });
-  if (community) await channel.lockPermissions().catch(() => {});
-  for (const id of new Set([guild.id, ...channel.permissionOverwrites.cache.keys()])) {
-    if (id === guild.members.me.id) continue;
-    await channel.permissionOverwrites.edit(id, { SendMessages: false }).catch(() => {});
-  }
-  await channel.permissionOverwrites.edit(guild.members.me.id, { ViewChannel: true, SendMessages: true }).catch(() => {});
-  return { channel, created: true };
 }
 
 export async function syncAllRanks(client) {
