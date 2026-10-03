@@ -104,20 +104,31 @@ export async function getRoomRecord(client, guildId, roomId) {
   return (await loadRooms(client, guildId))[roomId] || null;
 }
 
-export function buildControlPanel(record) {
+// Liest den echten Zustand aus den Channel-Rechten → die Box zeigt immer, was wirklich gilt.
+export function getRoomState(room) {
+  const overwrite = room.permissionOverwrites.cache.get(lockTarget(room.guild));
+  return {
+    isClosed: overwrite?.deny.has(PermissionFlagsBits.Connect) ?? false,
+    isHidden: overwrite?.deny.has(PermissionFlagsBits.ViewChannel) ?? false,
+    limit: room.userLimit || 0
+  };
+}
+
+export function buildControlPanel(record, room) {
+  const state = getRoomState(room);
+
   const embed = new EmbedBuilder()
     .setColor(0x5865F2)
-    .setTitle('🎛️ RAUM-STEUERUNG')
-    .setDescription([
-      `👑 Owner: <@${record.ownerId}> – nur der Owner kann die Steuerung benutzen.`,
-      '',
-      '🎮 **Spiel wählen** – Raumname wird zum Spiel',
-      '✏️ **Umbenennen** – eigener Name',
-      '👥 **Limit** – maximale Anzahl Leute',
-      ...(record.isPrivate ? [] : ['🔒 **Sperren/Öffnen** – niemand Neues kann mehr rein']),
-      '👢 **Rauswerfen** – jemanden aus dem Raum werfen'
-    ].join('\n'))
-    .setFooter({ text: 'Discord erlaubt nur 2 Namensänderungen pro 10 Minuten.' });
+    .setTitle('🎛️ Raum-Steuerung')
+    .setDescription('Steuere deinen Raum mit den Buttons unten. Änderungen siehst du hier sofort.')
+    .addFields(
+      { name: 'Besitzer', value: `<@${record.ownerId}>`, inline: true },
+      { name: 'Zugang', value: state.isClosed ? '🔒 Privat' : '🔓 Öffentlich', inline: true },
+      { name: 'Sichtbar', value: state.isHidden ? '🙈 Nein' : '👁️ Ja', inline: true },
+      { name: 'Limit', value: state.limit > 0 ? `👥 ${state.limit}` : '∞', inline: true },
+      ...(record.waitingId ? [{ name: 'Wartebereich', value: `<#${record.waitingId}>`, inline: true }] : [])
+    )
+    .setFooter({ text: 'Nur der Besitzer kann den Raum steuern • Umbenennen max. 2x pro 10 Min. (Discord-Limit)' });
 
   const gameSelect = new StringSelectMenuBuilder()
     .setCustomId('voice:game')
@@ -127,17 +138,58 @@ export function buildControlPanel(record) {
       { label: 'Zurück zu meinem Namen', value: 'reset', emoji: '🔊' }
     );
 
-  const buttons = [
+  const toggles = [
+    new ButtonBuilder().setCustomId('voice:access')
+      .setLabel(state.isClosed ? 'Öffentlich' : 'Privat').setEmoji(state.isClosed ? '🔓' : '🔒').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('voice:visibility')
+      .setLabel(state.isHidden ? 'Sichtbar' : 'Unsichtbar').setEmoji(state.isHidden ? '👁️' : '🙈').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('voice:limit').setLabel('Limit').setEmoji('👥').setStyle(ButtonStyle.Secondary)
+  ];
+
+  const actions = [
     new ButtonBuilder().setCustomId('voice:rename').setLabel('Umbenennen').setEmoji('✏️').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId('voice:limit').setLabel('Limit').setEmoji('👥').setStyle(ButtonStyle.Secondary),
-    ...(record.isPrivate ? [] : [new ButtonBuilder().setCustomId('voice:lock').setLabel('Sperren/Öffnen').setEmoji('🔒').setStyle(ButtonStyle.Secondary)]),
     new ButtonBuilder().setCustomId('voice:kick').setLabel('Rauswerfen').setEmoji('👢').setStyle(ButtonStyle.Danger)
   ];
 
   return {
+    content: `<@${record.ownerId}>, das ist **dein** Raum.`,
     embeds: [embed],
-    components: [new ActionRowBuilder().addComponents(gameSelect), new ActionRowBuilder().addComponents(buttons)]
+    components: [
+      new ActionRowBuilder().addComponents(gameSelect),
+      new ActionRowBuilder().addComponents(toggles),
+      new ActionRowBuilder().addComponents(actions)
+    ],
+    allowedMentions: { parse: [] }
   };
+}
+
+// Bearbeitet die vorhandene Box; fehlt sie, wird eine neue gepostet. Gibt die Nachrichten-ID zurück.
+async function updateControlPanel(room, record, { ping = false } = {}) {
+  const payload = buildControlPanel(record, room);
+  const existing = record.panelMessageId ? await room.messages.fetch(record.panelMessageId).catch(() => null) : null;
+  if (existing) {
+    await existing.edit(payload).catch(() => {});
+    return existing.id;
+  }
+  const sent = await room.send({ ...payload, allowedMentions: ping ? { users: [record.ownerId] } : { parse: [] } }).catch(error => {
+    logger.warn('[CustomVoice] Could not post control panel', { roomId: room.id, error: error.message });
+    return null;
+  });
+  return sent?.id || null;
+}
+
+// Für die Buttons: Box nach einer Änderung aktualisieren (und ggf. neue Nachrichten-ID speichern).
+export async function refreshControlPanel(client, room) {
+  await Mutex.runExclusive(`customvoice:${room.guild.id}`, async () => {
+    const rooms = await loadRooms(client, room.guild.id);
+    const record = rooms[room.id];
+    if (!record) return;
+    const messageId = await updateControlPanel(room, record);
+    if (messageId && messageId !== record.panelMessageId) {
+      record.panelMessageId = messageId;
+      await saveRooms(client, room.guild.id, rooms);
+    }
+  });
 }
 
 export function ownerRoomName(member, isPrivate) {
@@ -163,11 +215,23 @@ export function lockTarget(guild) {
   return findVerifiedRole(guild)?.id || guild.id;
 }
 
-export async function toggleRoomLock(room) {
-  const targetId = lockTarget(room.guild);
-  const locked = room.permissionOverwrites.cache.get(targetId)?.deny.has(PermissionFlagsBits.Connect) ?? false;
-  await room.permissionOverwrites.edit(targetId, { Connect: locked }, { reason: locked ? 'Raum geöffnet' : 'Raum gesperrt' });
-  return !locked;
+// Privat ↔ Öffentlich. Gibt zurück, ob der Raum jetzt privat ist.
+export async function toggleRoomAccess(room) {
+  const { isClosed } = getRoomState(room);
+  await room.permissionOverwrites.edit(lockTarget(room.guild), { Connect: isClosed }, { reason: isClosed ? 'Raum geöffnet' : 'Raum privat' });
+  return !isClosed;
+}
+
+// Sichtbar ↔ Unsichtbar. Wer schon drin ist, behält Zugriff. Gibt zurück, ob der Raum jetzt unsichtbar ist.
+export async function toggleRoomVisibility(room) {
+  const { isHidden } = getRoomState(room);
+  if (!isHidden) {
+    for (const member of humansIn(room).values()) {
+      await room.permissionOverwrites.edit(member.id, { ViewChannel: true, Connect: true }, { reason: 'Bleibt im unsichtbaren Raum' }).catch(() => {});
+    }
+  }
+  await room.permissionOverwrites.edit(lockTarget(room.guild), { ViewChannel: isHidden }, { reason: isHidden ? 'Raum sichtbar' : 'Raum unsichtbar' });
+  return !isHidden;
 }
 
 // Sichtbar nur für "Verifiziert". Fehlt die Rolle, gilt das alte Verhalten (@everyone).
@@ -231,6 +295,9 @@ async function createRoom(state, isPrivate, rooms) {
     ownerId: member.id,
     waitingId: waiting?.id || null,
     isPrivate,
+    // Beitritts-Reihenfolge: wer als Nächstes kam, wird Owner, wenn der Owner geht.
+    joinOrder: [],
+    panelMessageId: null,
     createdAt: new Date().toISOString()
   };
 
@@ -251,9 +318,7 @@ async function createRoom(state, isPrivate, rooms) {
     return;
   }
 
-  await room.send(buildControlPanel(rooms[room.id])).catch(error => {
-    logger.warn('[CustomVoice] Could not post control panel', { roomId: room.id, error: error.message });
-  });
+  rooms[room.id].panelMessageId = await updateControlPanel(room, rooms[room.id], { ping: true });
 }
 
 async function deleteRoom(guild, roomId, record, rooms) {
@@ -295,10 +360,13 @@ async function transferRoom(guild, roomId, record, newOwner) {
   room?.setName(roomName(newOwner, record.isPrivate)).catch(() => {});
   waiting?.setName(waitingName(newOwner)).catch(() => {});
 
-  room?.send({
-    content: `👑 ${newOwner} ist jetzt Owner dieses Raums und kann die Raum-Steuerung oben benutzen.`,
-    allowedMentions: { users: [newOwner.id] }
-  }).catch(() => {});
+  if (room) {
+    record.panelMessageId = await updateControlPanel(room, record);
+    room.send({
+      content: `👑 ${newOwner} ist jetzt Besitzer dieses Raums und kann die Raum-Steuerung oben benutzen.`,
+      allowedMentions: { users: [newOwner.id] }
+    }).catch(() => {});
+  }
 
   logger.info('[CustomVoice] Temporary room owner transferred', {
     guildId: guild.id,
@@ -334,7 +402,11 @@ async function evaluateRoom(guild, roomId, rooms) {
     return;
   }
 
-  await transferRoom(guild, roomId, record, humans.first());
+  // Nachfolger: wer nach dem Owner als Nächstes beigetreten ist (Fallback: irgendwer im Raum).
+  const order = record.joinOrder || [];
+  const next = order.map(id => humans.get(id)).find(Boolean) || humans.first();
+  record.joinOrder = order.filter(id => id !== next.id);
+  await transferRoom(guild, roomId, record, next);
 }
 
 function findRoomIdForChannel(rooms, channelId) {
@@ -359,8 +431,19 @@ export async function handleCustomVoiceCreate(oldState, newState) {
     const leftRoomId = findRoomIdForChannel(rooms, leftId);
 
     try {
+      // Wer einen Raum verlässt, fällt aus der Nachfolger-Reihenfolge.
+      if (leftId && rooms[leftId]) {
+        rooms[leftId].joinOrder = (rooms[leftId].joinOrder || []).filter(id => id !== member.id);
+      }
+
       if (leftRoomId) {
         await evaluateRoom(guild, leftRoomId, rooms);
+      }
+
+      // Neu im Raum (nicht der Owner) → hinten in der Nachfolger-Reihenfolge anstellen.
+      const joinedRoom = oldState.channelId !== newState.channelId ? rooms[newState.channelId] : null;
+      if (joinedRoom && joinedRoom.ownerId !== member.id) {
+        joinedRoom.joinOrder = [...(joinedRoom.joinOrder || []).filter(id => id !== member.id), member.id];
       }
 
       if (joinedTrigger) {

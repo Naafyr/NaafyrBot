@@ -7,7 +7,12 @@ import {
   TextInputBuilder,
   TextInputStyle
 } from 'discord.js';
-import { getRoomRecord, toggleRoomLock } from '../../../services/customVoiceCreateService.js';
+import {
+  getRoomRecord,
+  refreshControlPanel,
+  toggleRoomAccess,
+  toggleRoomVisibility
+} from '../../../services/customVoiceCreateService.js';
 
 export function voiceReply(interaction, text, color = 0x5865F2) {
   return interaction.reply({ embeds: [new EmbedBuilder().setColor(color).setDescription(text)], flags: MessageFlags.Ephemeral });
@@ -57,12 +62,22 @@ export default {
       case 'limit':
         return interaction.showModal(textModal('limit', '👥 Limit setzen', 'Max. Leute (0 = kein Limit)', 'z. B. 4', 2));
 
-      case 'lock': {
-        if (record.isPrivate) return voiceReply(interaction, 'ℹ️ Private Räume sind sowieso gesperrt.');
-        const locked = await toggleRoomLock(room);
-        return voiceReply(interaction, locked
-          ? '🔒 **Raum gesperrt.** Niemand Neues kann mehr beitreten.'
-          : '🔓 **Raum geöffnet.** Alle können wieder beitreten.');
+      // 'lock' = Button aus älteren Boxen
+      case 'lock':
+      case 'access': {
+        const closed = await toggleRoomAccess(room);
+        await refreshControlPanel(client, room);
+        return voiceReply(interaction, closed
+          ? '🔒 **Raum ist jetzt privat.** Niemand Neues kann mehr beitreten.'
+          : '🔓 **Raum ist jetzt öffentlich.** Alle können wieder beitreten.');
+      }
+
+      case 'visibility': {
+        const hidden = await toggleRoomVisibility(room);
+        await refreshControlPanel(client, room);
+        return voiceReply(interaction, hidden
+          ? '🙈 **Raum ist jetzt unsichtbar.** Wer drin ist, bleibt drin – alle anderen sehen ihn nicht mehr.'
+          : '👁️ **Raum ist wieder sichtbar.**');
       }
 
       case 'kick': {

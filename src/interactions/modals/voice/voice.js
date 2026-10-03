@@ -1,4 +1,4 @@
-import { customRoomName, renameRoom } from '../../../services/customVoiceCreateService.js';
+import { customRoomName, refreshControlPanel, renameRoom } from '../../../services/customVoiceCreateService.js';
 import { requireOwner, voiceReply } from '../../buttons/voice/voice.js';
 import { renameMessage } from '../../selectMenus/voice/voice.js';
 
@@ -22,6 +22,7 @@ export default {
         return voiceReply(interaction, '❌ Bitte eine Zahl von **0** (kein Limit) bis **99** eingeben.', 0xED4245);
       }
       await room.setUserLimit(limit, 'Limit vom Raum-Owner');
+      await refreshControlPanel(client, room);
       return voiceReply(interaction, limit === 0 ? '👥 **Kein Limit** mehr.' : `👥 Limit: **${limit} Leute**.`);
     }
 
