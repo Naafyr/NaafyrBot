@@ -6,6 +6,7 @@ import { formatWelcomeMessage, getRandomWelcomeMessage } from '../utils/welcome.
 import { logEvent, EVENT_TYPES } from '../services/loggingService.js';
 import { scheduleGuildCounterUpdate } from '../services/serverstatsService.js';
 import { checkJoinSecurity } from '../services/moderationSetupService.js';
+import { assignTraveler } from '../services/rankService.js';
 import { setBirthday as dbSetBirthday } from '../utils/database.js';
 import { logger } from '../utils/logger.js';
 
@@ -61,7 +62,7 @@ export default {
                             '',
                             welcomeMessage,
                             '',
-                            `🍺 **Gast #${packNumber}**`
+                            `🧭 **Reisender #${packNumber}**`
                         ].join('\n'))
                         .setThumbnail(user.displayAvatarURL())
                         .setTimestamp()
@@ -109,6 +110,7 @@ export default {
 
         try {
             await checkJoinSecurity(member);
+            await assignTraveler(member);
         } catch (error) {
             logger.debug('Error in join security check:', error);
         }

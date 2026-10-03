@@ -23,7 +23,27 @@ const CONGRATS = [
   '🍻 Krüge hoch! Heute feiern wir {user}! Alles Gute zum Geburtstag! 🥳',
   '🕯️ Ein Jahr mehr am Stammtisch – alles Gute zum Geburtstag, {user}! 🎂',
   '🎶 Der Barde spielt heute nur für {user}! Happy Birthday! 🎉',
-  '🍾 Die Runde geht heute auf {user}s Geburtstag! Prost und alles Gute! 🍻'
+  '🍾 Die Runde geht heute auf {user}s Geburtstag! Prost und alles Gute! 🍻',
+  '📜 Der Herold verkündet: Heute ist {user}s Ehrentag! 🎉',
+  '🍰 Der Koch hat extra einen Kuchen gebacken – für {user}! Alles Gute! 🎂',
+  '🪙 Ein Säckchen Gold für das Geburtstagskind {user}! 🎉',
+  '🔥 Am Kamin wird heute auf {user} angestoßen! Alles Gute! 🍻',
+  '🛡️ Alle Stammgäste der Taverne gratulieren {user} zum Geburtstag! 🍻',
+  '🥂 Gläser klirren – {user} hat Geburtstag! 🎉',
+  '🍖 Festmahl in der Taverne – zu Ehren von {user}! Alles Gute! 🥳',
+  '🗝️ Heute gehört die Taverne {user} – alles Gute zum Geburtstag! 🍻',
+  '🌟 Ein Jahr voller Abenteuer liegt hinter {user} – auf das nächste! 🎂',
+  '🕯️ Heute brennen in der Taverne extra viele Kerzen – für {user}! 🎂',
+  '🍺 Freibier am Tresen – {user} wird heute gefeiert! 🎉',
+  '🎁 Der Wirt hat ein Geschenk unter der Theke versteckt – für {user}! 🥳',
+  '🪑 Heute sitzt {user} am Ehrenplatz am Stammtisch! Alles Gute! 🎂',
+  '🎶 Die ganze Taverne singt für {user}: Happy Birthday! 🍻',
+  '🍷 Auf {user}! Möge dein neues Lebensjahr so gut sein wie das beste Fass im Keller! 🎉',
+  '🔔 Die Tavernenglocke läutet – {user} hat Geburtstag! 🥳',
+  '📜 Im Gästebuch steht heute in großen Buchstaben: Alles Gute, {user}! 🎂',
+  '🍻 Ein Hoch auf {user}! Heute wird bis zur letzten Runde gefeiert! 🎉',
+  '🧁 Kuchen, Krüge und gute Laune – alles für {user}! Happy Birthday! 🥳',
+  '🗺️ Ein neues Kapitel der Reise beginnt – alles Gute, {user}! 🎂'
 ];
 
 function panelKey(guildId) {

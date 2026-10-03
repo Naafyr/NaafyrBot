@@ -2,6 +2,7 @@
 
 import { PermissionFlagsBits } from 'discord.js';
 import { botConfig } from '../config/bot.js';
+import { promoteTravelerToGuest } from './rankService.js';
 import { logger } from '../utils/logger.js';
 import { getGuildConfig, setGuildConfig } from './config/guildConfig.js';
 import { createError, ErrorTypes } from '../utils/errorHandler.js';
@@ -92,6 +93,7 @@ export async function verifyUser(client, guildId, userId, options = {}) {
         await trackVerificationAttempt(userId, guildId, defaultMaxAttempts, defaultAttemptWindowMs);
 
         await member.roles.add(verifiedRole.id, `User verified (${source})`);
+        await promoteTravelerToGuest(member);
 
         logVerificationAction(client, guildId, userId, 'verified', {
             source,
@@ -236,6 +238,7 @@ export async function autoVerifyOnJoin(client, guild, member, verificationConfig
         }
 
         await member.roles.add(verifiedRole.id, 'Auto-verified on join');
+        await promoteTravelerToGuest(member);
 
         logVerificationAction(client, guild.id, member.id, 'auto_verified', {
             criteria: verificationConfig.autoVerify.criteria,

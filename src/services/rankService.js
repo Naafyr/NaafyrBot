@@ -13,6 +13,8 @@ export const RANKS = [
   { name: "🍾 Hat 'nen eigenen Krug", color: 0xF1C40F, days: 180, messages: 3000, voiceHours: 150 }
 ];
 export const VIP_ROLE = { name: '💎 Ehrengast', color: 0x9B59B6 };
+// Wer neu da und noch nicht verifiziert ist.
+export const TRAVELER_ROLE = { name: '🧭 Reisender', color: 0x95A5A6 };
 
 // Rollen-Trenner (Emoji vorne und hinten). Unsichtbare Zeichen (U+2800) hinten sorgen dafür,
 // dass der Trenner im Profil eine ganze Zeile füllt (Discord kürzt mit "...").
@@ -40,7 +42,7 @@ const findRole = (guild, name) => guild.roles.cache.find(role => role.name === n
 const findVerifiedRole = guild => guild.roles.cache.find(role => role.name.toLowerCase() === 'verifiziert' && !role.managed) || null;
 
 // Namen der Rollen, die der Bot automatisch vergibt (für den Mod-Log-Filter).
-export const AUTO_ROLE_NAMES = [...RANKS.map(rank => rank.name), ...Object.values(SEPARATORS)];
+export const AUTO_ROLE_NAMES = [TRAVELER_ROLE.name, ...RANKS.map(rank => rank.name), ...Object.values(SEPARATORS)];
 
 function groupRoles(guild) {
   const me = guild.members.me;
@@ -54,7 +56,7 @@ function groupRoles(guild) {
       && role.permissions.has(PermissionFlagsBits.Administrator) && role.id !== me?.roles.highest.id)),
     server: [findVerifiedRole(guild)].filter(Boolean),
     // Ehrengast oben, dann höchster Rang zuerst
-    rank: [findRole(guild, VIP_ROLE.name), ...[...RANKS].reverse().map(rank => findRole(guild, rank.name))].filter(Boolean),
+    rank: [findRole(guild, VIP_ROLE.name), ...[...RANKS].reverse().map(rank => findRole(guild, rank.name)), findRole(guild, TRAVELER_ROLE.name)].filter(Boolean),
     top: sortDesc(byNames(names(Object.values(LEADERBOARD_CATEGORIES).flatMap(category => category.roles)))),
     games: byNames(names(Object.values(GAMES).flatMap(game => [game.name, ...game.aliases]))),
     pings: byNames(names(Object.values(NOTIFY_OPTIONS).map(option => option.name)))
@@ -76,6 +78,7 @@ export async function setupRoles(guild) {
     if ((await ensureRole(guild, rank.name, { color: rank.color, hoist: true })).created) created.push(rank.name);
   }
   if ((await ensureRole(guild, VIP_ROLE.name, { color: VIP_ROLE.color, hoist: true })).created) created.push(VIP_ROLE.name);
+  if ((await ensureRole(guild, TRAVELER_ROLE.name, { color: TRAVELER_ROLE.color, hoist: true })).created) created.push(TRAVELER_ROLE.name);
   for (const [key, name] of Object.entries(SEPARATORS)) {
     const existing = findSeparator(guild, key);
     if (existing) {
@@ -149,6 +152,7 @@ export async function syncRanks(client, guild) {
   await sortRoles(guild).catch(() => {}); // z. B. neue Game-Rollen unter ihren Trenner schieben
 
   const verified = findVerifiedRole(guild);
+  const travelerRole = findRole(guild, TRAVELER_ROLE.name);
   const botTop = guild.members.me.roles.highest.position;
   const [chat, voice] = await Promise.all(['chat', 'voice'].map(category =>
     client.db.get(`guild:${guild.id}:rangliste:${category}:all:all`).then(stats => stats || {}).catch(() => ({}))));
@@ -174,10 +178,11 @@ export async function syncRanks(client, guild) {
       voiceMinutes: voice[member.id] || 0
     }) : null;
     RANKS.forEach((rank, index) => want(rankRoles[index], rank === target));
+    want(travelerRole, !isVerified);
     for (const [key, roles] of Object.entries(groups)) {
       if (key === 'team' && roles.some(role => role.position >= botTop)) continue;
       const hasGroupRole = roles.some(role => member.roles.cache.has(role.id))
-        || (key === 'rank' && Boolean(target));
+        || (key === 'rank' && (Boolean(target) || !isVerified));
       want(separators[key], hasGroupRole);
     }
 
@@ -228,4 +233,19 @@ export async function setupVipArea(guild) {
     created.push(spec.name);
   }
   return created;
+}
+
+// Direkt beim Beitritt: 🧭 Reisender (der 10-Min.-Abgleich macht nach dem Verifizieren 🍺 Gast daraus).
+export async function assignTraveler(member) {
+  if (member.user.bot) return;
+  const role = findRole(member.guild, TRAVELER_ROLE.name);
+  if (role) await member.roles.add(role, 'Neu auf dem Server').catch(() => {});
+}
+
+// Nach dem Verifizieren sofort: 🧭 Reisender → 🍺 Gast (höhere Ränge vergibt der 10-Min.-Abgleich).
+export async function promoteTravelerToGuest(member) {
+  const traveler = findRole(member.guild, TRAVELER_ROLE.name);
+  const guest = findRole(member.guild, RANKS[0].name);
+  if (traveler && member.roles.cache.has(traveler.id)) await member.roles.remove(traveler, 'Verifiziert').catch(() => {});
+  if (guest && !RANKS.some(rank => member.roles.cache.some(role => role.name === rank.name))) await member.roles.add(guest, 'Verifiziert').catch(() => {});
 }
