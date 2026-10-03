@@ -14,15 +14,23 @@ export const RANKS = [
 ];
 export const VIP_ROLE = { name: '💎 Ehrengast', color: 0x9B59B6 };
 
-// Rollen-Trenner (Emoji vorne und hinten).
-export const SEPARATORS = {
-  team: '━━━ 👑 TEAM 👑 ━━━',
-  server: '━━━ 🏠 SERVER 🏠 ━━━',
-  rank: '━━━ 🍺 RANG 🍺 ━━━',
-  top: '━━━ 🏆 RANGLISTE 🏆 ━━━',
-  games: '━━━ 🎮 GAMES 🎮 ━━━',
-  pings: '━━━ 🔕 PINGS 🔕 ━━━'
+// Rollen-Trenner (Emoji vorne und hinten). Der lange Balken hinten sorgt dafür,
+// dass der Trenner im Profil eine ganze Zeile füllt (Discord kürzt mit "...").
+const SEPARATOR_LABELS = {
+  team: '👑 TEAM 👑',
+  server: '🏠 SERVER 🏠',
+  rank: '🍺 RANG 🍺',
+  top: '🏆 RANGLISTE 🏆',
+  games: '🎮 GAMES 🎮',
+  pings: '🔕 PINGS 🔕'
 };
+export const SEPARATORS = Object.fromEntries(Object.entries(SEPARATOR_LABELS)
+  .map(([key, label]) => [key, `━━━ ${label} ${'━'.repeat(40)}`]));
+
+// Findet einen Trenner auch unter altem Namen (z. B. kurzer Balken).
+function findSeparator(guild, key) {
+  return guild.roles.cache.find(role => !role.managed && role.name.startsWith('━━━') && role.name.includes(` ${SEPARATOR_LABELS[key]} `)) || null;
+}
 
 export const VIP_CATEGORY_NAME = '──── 💎 VIP 💎 ────';
 const VIP_CHANNELS = { chat: '💬┃vip-chat', lounge: '🔊┃VIP-Lounge', waiting: '⏳┃vip-warteraum' };
@@ -68,8 +76,14 @@ export async function setupRoles(guild) {
     if ((await ensureRole(guild, rank.name, { color: rank.color, hoist: true })).created) created.push(rank.name);
   }
   if ((await ensureRole(guild, VIP_ROLE.name, { color: VIP_ROLE.color, hoist: true })).created) created.push(VIP_ROLE.name);
-  for (const name of Object.values(SEPARATORS)) {
-    if ((await ensureRole(guild, name, { hoist: false })).created) created.push(name);
+  for (const [key, name] of Object.entries(SEPARATORS)) {
+    const existing = findSeparator(guild, key);
+    if (existing) {
+      if (existing.name !== name) await existing.setName(name, 'Trenner verlängert').catch(() => {});
+      continue;
+    }
+    await guild.roles.create({ name, permissions: [], mentionable: false, hoist: false, reason: 'NaafyrBot Rollen-Trenner' });
+    created.push(SEPARATOR_LABELS[key]);
   }
 
   const { teamSkipped, sortError, blocked } = await sortRoles(guild);
@@ -87,7 +101,7 @@ export async function sortRoles(guild) {
   const layout = [];
   for (const [key, roles] of Object.entries(groups)) {
     if (key === 'team' && teamSkipped) continue;
-    const separator = findRole(guild, SEPARATORS[key]);
+    const separator = findSeparator(guild, key);
     if (roles.length === 0 || !separator) continue;
     layout.push(separator, ...roles);
   }
@@ -102,7 +116,7 @@ export async function sortRoles(guild) {
   const current = [...guild.roles.cache.values()].filter(movable).sort((a, b) => b.position - a.position);
   // Rollen über der Bot-Rolle kann der Bot nie verschieben → melden, damit man die Bot-Rolle hochzieht.
   const blocked = Object.entries(groups).filter(([key]) => key !== 'team').flatMap(([, roles]) => roles)
-    .concat(Object.values(SEPARATORS).map(name => findRole(guild, name)).filter(Boolean))
+    .concat(Object.keys(SEPARATORS).map(key => findSeparator(guild, key)).filter(Boolean))
     .filter(role => role.position >= botTop).map(role => role.name);
   if (desired.every((role, index) => current[index]?.id === role.id)) return { teamSkipped, changed: false, blocked };
 
@@ -141,7 +155,7 @@ export async function syncRanks(client, guild) {
 
   await guild.members.fetch().catch(() => null);
   const groups = groupRoles(guild);
-  const separators = Object.fromEntries(Object.keys(SEPARATORS).map(key => [key, findRole(guild, SEPARATORS[key])]));
+  const separators = Object.fromEntries(Object.keys(SEPARATORS).map(key => [key, findSeparator(guild, key)]));
 
   for (const member of guild.members.cache.values()) {
     if (member.user.bot) continue;
