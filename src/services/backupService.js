@@ -97,16 +97,5 @@ export async function runBackups(client) {
       content: `💾 Sicherung: **${tableCount} Tabellen**, ${rowCount} Einträge, ${sizeKb} KB`,
       files: [new AttachmentBuilder(buffer, { name: `backup_${stamp()}.json.gz` })]
     }).catch(error => logger.error('[Backup] Posten fehlgeschlagen', { guildId: channel.guild.id, error: error.message }));
-  }
-
-  // Zusätzlich per DM an die Server-Besitzer – DMs bleiben, auch wenn der Channel gelöscht wird.
-  const ownerIds = new Set(channels.map(channel => channel.guild.ownerId).filter(Boolean));
-  for (const ownerId of ownerIds) {
-    const owner = await client.users.fetch(ownerId).catch(() => null);
-    await owner?.send({
-      content: `💾 Backup: **${tableCount} Tabellen**, ${rowCount} Einträge, ${sizeKb} KB`,
-      files: [new AttachmentBuilder(buffer, { name: `backup_${stamp()}.json.gz` })]
-    }).catch(error => logger.warn('[Backup] DM fehlgeschlagen', { ownerId, error: error.message }));
-  }
-  logger.info('[Backup] Fertig', { tableCount, rowCount, sizeKb });
+  }  logger.info('[Backup] Fertig', { tableCount, rowCount, sizeKb });
 }
