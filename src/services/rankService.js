@@ -25,17 +25,17 @@ const SEPARATOR_LABELS = {
   pings: '🔕 PINGS 🔕'
 };
 export const SEPARATORS = Object.fromEntries(Object.entries(SEPARATOR_LABELS)
-  .map(([key, label]) => [key, `━━━ ${label} ━━━${'\u2800'.repeat(40)}`]));
+  .map(([key, label]) => [key, `▬▬▬ ${label} ▬▬▬${'\u2800'.repeat(40)}`]));
 
 // Findet einen Trenner auch unter altem Namen (z. B. kurzer Balken).
 function findSeparator(guild, key) {
-  return guild.roles.cache.find(role => !role.managed && /^(━━━|───) /.test(role.name) && role.name.includes(` ${SEPARATOR_LABELS[key]} `)) || null;
+  return guild.roles.cache.find(role => !role.managed && /^(━━━|───|▬▬▬) /.test(role.name) && role.name.includes(` ${SEPARATOR_LABELS[key]} `)) || null;
 }
 
 export const VIP_CATEGORY_NAME = '──── 💎 VIP 💎 ────';
 const VIP_CHANNELS = { chat: '💬┃vip-chat', lounge: '🔊┃VIP-Lounge', waiting: '⏳┃vip-warteraum' };
 
-const isSeparatorName = name => /^(━━━|───) /.test(name);
+const isSeparatorName = name => /^(━━━|───|▬▬▬) /.test(name);
 const findRole = (guild, name) => guild.roles.cache.find(role => role.name === name && !role.managed) || null;
 const findVerifiedRole = guild => guild.roles.cache.find(role => role.name.toLowerCase() === 'verifiziert' && !role.managed) || null;
 
