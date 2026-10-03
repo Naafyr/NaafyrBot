@@ -65,11 +65,11 @@ export default {
       // 'lock' = Button aus älteren Boxen
       case 'lock':
       case 'access': {
-        const closed = await toggleRoomAccess(room);
+        const closed = await toggleRoomAccess(client, room);
         await refreshControlPanel(client, room);
         return voiceReply(interaction, closed
-          ? '🔒 **Raum ist jetzt privat.** Niemand Neues kann mehr beitreten.'
-          : '🔓 **Raum ist jetzt öffentlich.** Alle können wieder beitreten.');
+          ? '🔒 **Raum ist jetzt privat.** Wer rein will, wartet im ⏳ Wartebereich darunter.'
+          : '🔓 **Raum ist jetzt öffentlich.** Alle können beitreten, Wartende wurden reingeholt.');
       }
 
       case 'visibility': {

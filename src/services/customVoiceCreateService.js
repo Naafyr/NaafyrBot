@@ -215,10 +215,49 @@ export function lockTarget(guild) {
   return findVerifiedRole(guild)?.id || guild.id;
 }
 
-// Privat ↔ Öffentlich. Gibt zurück, ob der Raum jetzt privat ist.
-export async function toggleRoomAccess(room) {
+function createWaitingRoom(guild, owner, parentId) {
+  return guild.channels.create({
+    name: waitingName(owner),
+    type: ChannelType.GuildVoice,
+    parent: parentId,
+    permissionOverwrites: [
+      ...audienceOverwrites(guild, { canConnect: true }),
+      ownerOverwrite(owner.id),
+      botOverwrite(guild)
+    ],
+    reason: 'Waiting room for private join-to-create room'
+  });
+}
+
+// Privat ↔ Öffentlich. Privat → Wartebereich darunter, öffentlich → Wartebereich weg (Wartende kommen rein).
+// Gibt zurück, ob der Raum jetzt privat ist.
+export async function toggleRoomAccess(client, room) {
+  const { guild } = room;
   const { isClosed } = getRoomState(room);
-  await room.permissionOverwrites.edit(lockTarget(room.guild), { Connect: isClosed }, { reason: isClosed ? 'Raum geöffnet' : 'Raum privat' });
+  await room.permissionOverwrites.edit(lockTarget(guild), { Connect: isClosed }, { reason: isClosed ? 'Raum geöffnet' : 'Raum privat' });
+
+  await Mutex.runExclusive(`customvoice:${guild.id}`, async () => {
+    const rooms = await loadRooms(client, guild.id);
+    const record = rooms[room.id];
+    if (!record) return;
+    const waiting = record.waitingId ? guild.channels.cache.get(record.waitingId) : null;
+
+    if (isClosed && waiting) {
+      for (const member of humansIn(waiting).values()) await member.voice.setChannel(room).catch(() => {});
+      await waiting.delete('Raum geöffnet').catch(() => {});
+      record.waitingId = null;
+    } else if (!isClosed && !waiting) {
+      const owner = guild.members.cache?.get(record.ownerId) || { id: record.ownerId, displayName: room.name.split('┃').pop() };
+      const created = await createWaitingRoom(guild, owner, room.parentId).catch(error => {
+        logger.warn('[CustomVoice] Could not create waiting room', { roomId: room.id, error: error.message });
+        return null;
+      });
+      await created?.setPosition?.(room.position + 1).catch(() => {});
+      record.waitingId = created?.id || null;
+    } else return;
+
+    await saveRooms(client, guild.id, rooms);
+  });
   return !isClosed;
 }
 
@@ -277,19 +316,7 @@ async function createRoom(state, isPrivate, rooms) {
 
   let waiting = null;
 
-  if (isPrivate) {
-    waiting = await guild.channels.create({
-      name: waitingName(member),
-      type: ChannelType.GuildVoice,
-      parent: trigger.parentId,
-      permissionOverwrites: [
-        ...audienceOverwrites(guild, { canConnect: true }),
-        ownerOverwrite(member.id),
-        botOverwrite(guild)
-      ],
-      reason: 'Waiting room for private join-to-create room'
-    });
-  }
+  if (isPrivate) waiting = await createWaitingRoom(guild, member, trigger.parentId);
 
   rooms[room.id] = {
     ownerId: member.id,
