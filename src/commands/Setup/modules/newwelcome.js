@@ -371,6 +371,14 @@ export default {
 
             await getOrCreateTextChannel(
                 guild,
+                '🖥️┃setups',
+                'Zeig dein PC- und Gaming-Setup',
+                ['setups', 'setup'],
+                communityCategory
+            );
+
+            await getOrCreateTextChannel(
+                guild,
                 '📸┃allgemein-bilder',
                 'Allgemeine Bilder und Fotos',
                 ['allgemein-bilder', 'bilder', 'fotos'],

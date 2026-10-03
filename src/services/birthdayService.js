@@ -8,6 +8,7 @@ import {
 } from 'discord.js';
 import { getGuildBirthdays, setBirthday as dbSetBirthday, deleteBirthday as dbDeleteBirthday } from '../utils/database.js';
 import { logger } from '../utils/logger.js';
+import { BIRTHDAY_ROLE } from './rankService.js';
 
 const TIME_ZONE = 'Europe/Vienna';
 const UPCOMING_LIMIT = 5;
@@ -203,11 +204,22 @@ export async function checkBirthdays(client) {
       if ((await client.db.get(lastRunKey(guild.id))) === todayId) continue;
       await client.db.set(lastRunKey(guild.id), todayId);
 
+      // 🎂 Geburtstagskind: gestern vergebene Rolle wieder weg, heute neu vergeben.
+      const birthdayRole = guild.roles?.cache?.find(role => role.name === BIRTHDAY_ROLE.name && !role.managed) || null;
+      if (birthdayRole) {
+        await guild.members.fetch().catch(() => null);
+        for (const member of birthdayRole.members.values()) {
+          await member.roles.remove(birthdayRole, 'Geburtstag vorbei').catch(() => {});
+        }
+      }
+
       const birthdays = (await getGuildBirthdays(client, guild.id)) || {};
       for (const [userId, data] of Object.entries(birthdays)) {
         if (data.month !== today.month || celebrationDay(data.month, data.day, today.year) !== today.day) continue;
         const member = await guild.members.fetch(userId).catch(() => null);
-        if (member) await congratulate(channel, member);
+        if (!member) continue;
+        await congratulate(channel, member);
+        if (birthdayRole) await member.roles.add(birthdayRole, 'Hat heute Geburtstag').catch(() => {});
       }
 
       await refreshBirthdayPanel(client, guild);

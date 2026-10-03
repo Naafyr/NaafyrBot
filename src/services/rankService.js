@@ -15,6 +15,8 @@ export const RANKS = [
 export const VIP_ROLE = { name: '💎 Ehrengast', color: 0x9B59B6 };
 // Wer neu da und noch nicht verifiziert ist.
 export const TRAVELER_ROLE = { name: '🧭 Reisender', color: 0x95A5A6 };
+// Am Geburtstag 24 Std. ganz oben in der Mitgliederliste.
+export const BIRTHDAY_ROLE = { name: '🎂 Geburtstagskind', color: 0xFF73FA };
 
 // Rollen-Trenner (Emoji vorne und hinten). Unsichtbare Zeichen (U+2800) hinten sorgen dafür,
 // dass der Trenner im Profil eine ganze Zeile füllt (Discord kürzt mit "...").
@@ -42,7 +44,7 @@ const findRole = (guild, name) => guild.roles.cache.find(role => role.name === n
 const findVerifiedRole = guild => guild.roles.cache.find(role => role.name.toLowerCase() === 'verifiziert' && !role.managed) || null;
 
 // Namen der Rollen, die der Bot automatisch vergibt (für den Mod-Log-Filter).
-export const AUTO_ROLE_NAMES = [TRAVELER_ROLE.name, ...RANKS.map(rank => rank.name), ...Object.values(SEPARATORS)];
+export const AUTO_ROLE_NAMES = [BIRTHDAY_ROLE.name, TRAVELER_ROLE.name, ...RANKS.map(rank => rank.name), ...Object.values(SEPARATORS)];
 
 function groupRoles(guild) {
   const me = guild.members.me;
@@ -56,7 +58,7 @@ function groupRoles(guild) {
       && role.permissions.has(PermissionFlagsBits.Administrator) && role.id !== me?.roles.highest.id)),
     server: [findVerifiedRole(guild)].filter(Boolean),
     // Ehrengast oben, dann höchster Rang zuerst
-    rank: [findRole(guild, VIP_ROLE.name), ...[...RANKS].reverse().map(rank => findRole(guild, rank.name)), findRole(guild, TRAVELER_ROLE.name)].filter(Boolean),
+    rank: [findRole(guild, BIRTHDAY_ROLE.name), findRole(guild, VIP_ROLE.name), ...[...RANKS].reverse().map(rank => findRole(guild, rank.name)), findRole(guild, TRAVELER_ROLE.name)].filter(Boolean),
     top: sortDesc(byNames(names(Object.values(LEADERBOARD_CATEGORIES).flatMap(category => category.roles)))),
     games: byNames(names(Object.values(GAMES).flatMap(game => [game.name, ...game.aliases]))),
     pings: byNames(names(Object.values(NOTIFY_OPTIONS).map(option => option.name)))
@@ -78,6 +80,7 @@ export async function setupRoles(guild) {
     if ((await ensureRole(guild, rank.name, { color: rank.color, hoist: true })).created) created.push(rank.name);
   }
   if ((await ensureRole(guild, VIP_ROLE.name, { color: VIP_ROLE.color, hoist: true })).created) created.push(VIP_ROLE.name);
+  if ((await ensureRole(guild, BIRTHDAY_ROLE.name, { color: BIRTHDAY_ROLE.color, hoist: true })).created) created.push(BIRTHDAY_ROLE.name);
   if ((await ensureRole(guild, TRAVELER_ROLE.name, { color: TRAVELER_ROLE.color, hoist: true })).created) created.push(TRAVELER_ROLE.name);
   for (const [key, name] of Object.entries(SEPARATORS)) {
     const existing = findSeparator(guild, key);
