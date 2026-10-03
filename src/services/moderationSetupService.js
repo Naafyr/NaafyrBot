@@ -9,6 +9,7 @@ import {
 import { getGuildConfig, updateGuildConfig } from './config/guildConfig.js';
 import { logEvent } from './loggingService.js';
 import { logger } from '../utils/logger.js';
+import { CATEGORY_ORDER } from '../utils/categoryOrder.js';
 
 export const MOD_CATEGORY_NAME = '──── 🛡️ MODERATION 🛡️ ────';
 export const MOD_LOG_NAME = '📝┃mod-log';
@@ -105,6 +106,19 @@ export async function removeDiscordDefaults(guild, { keepChannelId = null } = {}
   );
   for (const voice of defaultVoices.values()) {
     await voice.delete('Discord-Standard-Voice entfernt').then(() => removed.push(`🔊 ${voice.name}`)).catch(() => {});
+  }
+
+  // Leere Doppel unserer Kategorien (z. B. eine alte "VOICE"-Kategorie neben ──── 🔊 VOICE 🔊 ────).
+  const allCategories = guild.channels.cache.filter(channel => channel.type === ChannelType.GuildCategory);
+  for (const category of allCategories.values()) {
+    const entry = CATEGORY_ORDER.find(item => category.name.toUpperCase().includes(item.keyword));
+    if (!entry || category.name === entry.name) continue;
+
+    const realOneExists = allCategories.some(other => other.id !== category.id && other.name === entry.name);
+    const isEmpty = !guild.channels.cache.some(channel => channel.parentId === category.id);
+    if (realOneExists && isEmpty) {
+      await category.delete('Leere doppelte Kategorie entfernt').then(() => removed.push(category.name)).catch(() => {});
+    }
   }
 
   return removed;
