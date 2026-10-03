@@ -6,10 +6,11 @@ import { logger } from '../utils/logger.js';
 // Tavernen-Ränge, von unten nach oben. Rein optisch: keine Berechtigungen, rechts in der Mitgliederliste.
 // days = Tage auf dem Server, dazu messages ODER voiceHours (All-Time-Werte der Rangliste).
 export const RANKS = [
-  { name: '🍺 Gast', color: 0xC8A27A, days: 0, messages: 0, voiceHours: 0 },
-  { name: '🍻 Stammgast', color: 0xE59E2D, days: 7, messages: 100, voiceHours: 5 },
-  { name: '⚔️ Ritter', color: 0x8FA3BF, days: 30, messages: 500, voiceHours: 25 },
-  { name: '🐉 Drachentöter', color: 0xC0392B, days: 90, messages: 1500, voiceHours: 100 }
+  { name: '🍺 Gast', color: 0xD7C4A3, days: 0, messages: 0, voiceHours: 0 },
+  { name: '🍻 Stammgast', color: 0xE6A85C, days: 7, messages: 100, voiceHours: 5 },
+  { name: '🥴 Kneipenhocker', color: 0xE07B39, days: 30, messages: 400, voiceHours: 20 },
+  { name: '🪑 Thekenlegende', color: 0xC0533A, days: 90, messages: 1200, voiceHours: 60 },
+  { name: "🍾 Hat 'nen eigenen Krug", color: 0xF1C40F, days: 180, messages: 3000, voiceHours: 150 }
 ];
 export const VIP_ROLE = { name: '💎 Ehrengast', color: 0x9B59B6 };
 
