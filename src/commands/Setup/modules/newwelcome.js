@@ -14,6 +14,7 @@ import { InteractionHelper } from '../../../utils/interactionHelper.js';
 import { replyUserError, ErrorTypes } from '../../../utils/errorHandler.js';
 import { logger } from '../../../utils/logger.js';
 import { sortCategories } from '../../../utils/categoryOrder.js';
+import { GUIDE_CHANNEL_NAME, postTavernGuide } from '../../../services/tavernGuideService.js';
 
 async function getOrCreateVerifiedRole(guild) {
     let role = guild.roles.cache.find(
@@ -337,6 +338,14 @@ export default {
                 welcomeCategory
             );
 
+            const guideChannel = await getOrCreateTextChannel(
+                guild,
+                GUIDE_CHANNEL_NAME,
+                'So funktioniert die Taverne',
+                ['tavernenführer'],
+                welcomeCategory
+            );
+
             await getOrCreateTextChannel(
                 guild,
                 '🎒┃ausrüstung',
@@ -446,6 +455,11 @@ export default {
                 welcomeChannel,
                 rulesChannel
             );
+
+            // Tavernenführer: lesen ja, schreiben nein – und die Boxen posten/aktualisieren.
+            await guideChannel.permissionOverwrites.edit(verifiedRole.id, { ViewChannel: true, SendMessages: false }).catch(() => {});
+            await guideChannel.permissionOverwrites.edit(client.user.id, { ViewChannel: true, SendMessages: true, EmbedLinks: true }).catch(() => {});
+            await postTavernGuide(client, guild).catch(error => logger.warn('[Tavernenführer] Posten fehlgeschlagen', { error: error.message }));
 
             const oldMessages = await rulesChannel.messages.fetch({ limit: 50 }).catch(() => null);
 
