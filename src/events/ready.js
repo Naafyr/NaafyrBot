@@ -5,7 +5,7 @@ import { reconcileTicketPanels, reconcileVerificationPanels } from "../services/
 import { cleanupCustomVoiceRooms } from "../services/customVoiceCreateService.js";
 import { checkBirthdays } from "../services/birthdayService.js";
 import { sortCategories } from "../utils/categoryOrder.js";
-import { initStatusReporter } from "../utils/statusReporter.js";
+import { initStatusReporter, reportStartup } from "../utils/statusReporter.js";
 import { migrateOldWelcomeMessages } from "../utils/welcomeMigration.js";
 import { cleanupLiveChannelOnce } from "../services/twitchLiveService.js";
 
@@ -22,6 +22,7 @@ export default {
       startupLog(`Loaded ${client.commands.size} commands`);
 
       initStatusReporter(client);
+      reportStartup(client).catch(() => {});
       migrateOldWelcomeMessages(client).catch(() => {}); // läuft im Hintergrund
       cleanupLiveChannelOnce(client).catch(() => {});
       await cleanupCustomVoiceRooms(client);
