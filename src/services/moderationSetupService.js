@@ -97,6 +97,16 @@ export async function removeDiscordDefaults(guild, { keepChannelId = null } = {}
     }
   }
 
+  // Die Standard-Voice "Allgemein" kann auch in einer umbenannten Kategorie stecken (z. B. ──── 🔊 VOICE 🔊 ────).
+  const defaultVoices = guild.channels.cache.filter(channel =>
+    channel.type === ChannelType.GuildVoice &&
+    DEFAULT_CHANNEL_NAMES.has(channel.name.toLowerCase()) &&
+    channel.members.size === 0
+  );
+  for (const voice of defaultVoices.values()) {
+    await voice.delete('Discord-Standard-Voice entfernt').then(() => removed.push(`🔊 ${voice.name}`)).catch(() => {});
+  }
+
   return removed;
 }
 

@@ -1,35 +1,56 @@
 import { ChannelType } from 'discord.js';
 import { logger } from './logger.js';
 
-// Gewünschte Reihenfolge der Kategorien von oben nach unten.
+// Gewünschte Reihenfolge von oben nach unten. Erkannt wird über den exakten Namen,
+// sonst über ein Stichwort im Namen (falls eine Kategorie früher anders hieß).
 export const CATEGORY_ORDER = [
-  '──── 📊 SERVER-STATISTIKEN 📊 ────',
-  '──── 👋 MOIN 👋 ────',
-  '──── 🎬 CONTENT 🎬 ────',
-  '──── 🏆 LEADERBOARD 🏆 ────',
-  '──── 🎭 WILLKOMMEN 🎭 ────',
-  '──── 💬 COMMUNITY 💬 ────',
-  '──── 🔊 VOICE 🔊 ────',
-  '──── 🎮 GAMES 🎮 ────',
-  '──── 📰 PATCH-NOTES 📰 ────',
-  '──── 🛡️ MODERATION 🛡️ ────'
+  { name: '──── 📊 SERVER-STATISTIKEN 📊 ────', keyword: 'STATISTIK' },
+  { name: '──── 👋 MOIN 👋 ────', keyword: 'MOIN' },
+  { name: '──── 🎬 CONTENT 🎬 ────', keyword: 'CONTENT' },
+  { name: '──── 🏆 LEADERBOARD 🏆 ────', keyword: 'LEADERBOARD' },
+  { name: '──── 🎭 WILLKOMMEN 🎭 ────', keyword: 'WILLKOMMEN' },
+  { name: '──── 💬 COMMUNITY 💬 ────', keyword: 'COMMUNITY' },
+  { name: '──── 🔊 VOICE 🔊 ────', keyword: 'VOICE' },
+  { name: '──── 🎮 GAMES 🎮 ────', keyword: 'GAMES' },
+  { name: '──── 📰 PATCH-NOTES 📰 ────', keyword: 'PATCH' },
+  { name: '──── 🛡️ MODERATION 🛡️ ────', keyword: 'MODERATION' }
 ];
 
-export function desiredCategoryOrder(categories) {
-  const known = CATEGORY_ORDER
-    .map(name => categories.find(category => category.name === name))
-    .filter(Boolean);
+// Die Statistik-Kategorie erkennt man sicher an ihren Zähler-Channels.
+const COUNTER_CHANNEL = /^(👥|🟢|🚀) /;
+
+function isStatsCategory(category, channels) {
+  return channels.some(channel => channel.parentId === category.id && COUNTER_CHANNEL.test(channel.name));
+}
+
+export function desiredCategoryOrder(categories, channels = []) {
+  const used = new Set();
+  const pick = category => { used.add(category.id); return category; };
+
+  const known = CATEGORY_ORDER.map((entry, index) => {
+    const exact = categories.find(category => !used.has(category.id) && category.name === entry.name);
+    if (exact) return pick(exact);
+    if (index === 0) {
+      const stats = categories.find(category => !used.has(category.id) && isStatsCategory(category, channels));
+      if (stats) return pick(stats);
+    }
+    const byKeyword = categories.find(category => !used.has(category.id) && category.name.toUpperCase().includes(entry.keyword));
+    return byKeyword ? pick(byKeyword) : null;
+  }).filter(Boolean);
+
   const others = categories
-    .filter(category => !CATEGORY_ORDER.includes(category.name))
+    .filter(category => !used.has(category.id))
     .sort((a, b) => a.position - b.position);
   return [...known, ...others];
 }
 
 // Sortiert die Kategorien. Gibt die Namen zurück, die nicht verschoben werden konnten.
 export async function sortCategories(guild) {
-  const categories = [...guild.channels.cache.filter(channel => channel.type === ChannelType.GuildCategory).values()]
+  const allChannels = [...guild.channels.cache.values()];
+  const categories = allChannels
+    .filter(channel => channel.type === ChannelType.GuildCategory)
     .sort((a, b) => a.position - b.position);
-  const desired = desiredCategoryOrder(categories);
+  const desired = desiredCategoryOrder(categories, allChannels);
 
   if (desired.every((category, index) => categories[index]?.id === category.id)) return [];
 
@@ -49,4 +70,10 @@ export async function sortCategories(guild) {
     });
   }
   return failed;
+}
+
+export function currentCategoryOrder(guild) {
+  return [...guild.channels.cache.filter(channel => channel.type === ChannelType.GuildCategory).values()]
+    .sort((a, b) => a.position - b.position)
+    .map(category => category.name);
 }
