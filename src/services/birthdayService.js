@@ -18,7 +18,12 @@ const CONGRATS = [
   '🎂 Die ganze Taverne stößt auf {user} an! Prost und alles Gute zum Geburtstag! 🍻',
   '🎈 Happy Birthday, {user}! Level up im echten Leben! 🎮',
   '🥳 Heute ist der große Tag von {user}! Alles Liebe und Gute zum Geburtstag! 🎁',
-  '🎊 {user} hat Geburtstag! Kuchen für alle – und fleißig gratulieren! 🍰'
+  '🎊 {user} hat Geburtstag! Kuchen für alle – und fleißig gratulieren! 🍰',
+  '🍺 Der Wirt schenkt heute aufs Haus aus – {user} hat Geburtstag! Alles Gute! 🎉',
+  '🍻 Krüge hoch! Heute feiern wir {user}! Alles Gute zum Geburtstag! 🥳',
+  '🕯️ Ein Jahr mehr am Stammtisch – alles Gute zum Geburtstag, {user}! 🎂',
+  '🎶 Der Barde spielt heute nur für {user}! Happy Birthday! 🎉',
+  '🍾 Die Runde geht heute auf {user}s Geburtstag! Prost und alles Gute! 🍻'
 ];
 
 function panelKey(guildId) {
