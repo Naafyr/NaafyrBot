@@ -91,9 +91,21 @@ export async function migrateCategoryNames(guild) {
   }
 }
 
+// Statistik-Kategorie an ihren Zähler-Channels erkennen und in AUSHANG umbenennen (egal wie sie vorher hieß).
+async function renameStatsCategory(guild) {
+  const target = CATEGORY_ORDER[0].name;
+  const channels = [...guild.channels.cache.values()];
+  if (channels.some(channel => channel.type === ChannelType.GuildCategory && channel.name === target)) return;
+  const stats = channels.find(channel => channel.type === ChannelType.GuildCategory && isStatsCategory(channel, channels));
+  if (!stats) return;
+  await stats.setName(target, 'Taverne: Aushang').catch(error =>
+    logger.warn('[Kategorien] Aushang umbenennen fehlgeschlagen', { guildId: guild.id, error: error.message }));
+}
+
 // Sortiert die Kategorien. Gibt die Namen zurück, die nicht verschoben werden konnten.
 export async function sortCategories(guild) {
   await migrateCategoryNames(guild);
+  await renameStatsCategory(guild);
   const allChannels = [...guild.channels.cache.values()];
   const categories = allChannels
     .filter(channel => channel.type === ChannelType.GuildCategory)
