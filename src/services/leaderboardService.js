@@ -8,7 +8,7 @@ const CHAT_COOLDOWN_MS = 10_000;
 
 export const LEADERBOARD_CHANNEL_NAMES = new Set(['🏆┃ehrentafel', 'ehrentafel', '🏆┃leaderboard', 'leaderboard']);
 const PHOTO_CHANNEL_NAMES = new Set([
-  '🍕┃essen-bilder', '🐾┃tier-bilder', '🐾┃haustiere', '📸┃allgemein-bilder', '🖥️┃setups', '⚒️┃die-schmiede', 'die-schmiede',
+  '🍕┃essen-bilder', '🐾┃tier-bilder', '🐾┃haustiere', '🐾┃tierische-gäste', 'tierische-gäste', '📸┃allgemein-bilder', '🖥️┃setups', '⚒️┃die-schmiede', 'die-schmiede',
   'essen-bilder', 'tier-bilder', 'haustiere', 'allgemein-bilder', 'setups',
   '🍖┃aus-der-küche', '🖼️┃bilderwand', 'aus-der-küche', 'bilderwand'
 ]);
@@ -16,19 +16,19 @@ const AFK_CHANNEL_NAMES = new Set(['😴┃schlafkammer', 'schlafkammer', '😴�
 
 export const CATEGORIES = {
   chat: {
-    title: '💬 CHAT – Nachrichten',
+    title: '🍺 TRESENREDNER – die meisten Nachrichten',
     color: 0x5865F2,
     short: value => `${value}`,
     roles: ['Schreibkünstler', 'Aktiver Chatter', 'Tastaturkrieger']
   },
   voice: {
-    title: '🎙️ VOICE – Zeit im Voice',
+    title: '🪑 SITZFLEISCH – die meiste Zeit im Voice',
     color: 0x57F287,
     short: formatMinutesShort,
     roles: ['Sprechmeister', 'Voice-Veteran', 'Dauerredner']
   },
   photo: {
-    title: '📸 FOTOS – Bilder',
+    title: '🎨 HOFMALER – die meisten Bilder',
     color: 0xEB459E,
     short: value => `${value}`,
     roles: ['Meisterfotograf', 'Fotograf', 'Schnappschütze']
@@ -36,9 +36,9 @@ export const CATEGORIES = {
 };
 
 export const PERIODS = {
-  week: { label: 'Woche', emoji: '📅' },
-  month: { label: 'Monat', emoji: '🗓️' },
-  all: { label: 'All-Time', emoji: '♾️' }
+  week: { label: 'Diese Woche', emoji: '📅' },
+  month: { label: 'Dieser Monat', emoji: '🗓️' },
+  all: { label: 'Für immer', emoji: '♾️' }
 };
 
 // Die Top-3-Rollen richten sich nach dem laufenden Monat.
@@ -248,7 +248,9 @@ export function findLeaderboardChannel(guild) {
 
 // Löscht alte Ranglisten-Nachrichten des Bots und postet Chat, Voice, Fotos neu (in dieser Reihenfolge).
 export async function postLeaderboardMessages(client, guild, channel) {
-  const titles = Object.values(CATEGORIES).map(config => config.title);
+  // Auch alte Überschriften (vor der Taverne-Umbenennung) erkennen, damit nichts doppelt stehen bleibt.
+  const titles = [...Object.values(CATEGORIES).map(config => config.title),
+    '💬 CHAT – Nachrichten', '🎙️ VOICE – Zeit im Voice', '📸 FOTOS – Bilder'];
   const recent = await channel.messages.fetch({ limit: 50 }).catch(() => null);
   if (recent) {
     const old = recent.filter(message =>

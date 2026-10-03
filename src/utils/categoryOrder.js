@@ -47,7 +47,9 @@ export const TAVERN_RENAMES = {
   '📸┃allgemein-bilder': '🖼️┃bilderwand',
   '🍕┃essen-bilder': '🍖┃aus-der-küche',
   '🖥️┃setups': '⚒️┃die-schmiede',
-  '💡┃vorschläge': '📮┃briefkasten-vom-wirt'
+  '💡┃vorschläge': '📮┃briefkasten-vom-wirt',
+  '🐾┃haustiere': '🐾┃tierische-gäste',
+  '🐾┃tier-bilder': '🐾┃tierische-gäste'
 };
 
 // Die Statistik-Kategorie erkennt man sicher an ihren Zähler-Channels.
