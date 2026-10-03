@@ -72,6 +72,50 @@ export async function ensureTestChannel(guild, modLog) {
   return { channel, created: true };
 }
 
+export const BACKUP_CHANNEL_NAME = '💾┃backups';
+export const AFK_CHANNEL_NAME = '😴┃afk';
+
+// Backups landen als Datei in diesem Admin-Channel (Railway-Speicher ist nicht dauerhaft).
+export async function ensureBackupChannel(guild, modLog) {
+  const existing = guild.channels.cache.find(channel => channel.type === ChannelType.GuildText && channel.name === BACKUP_CHANNEL_NAME);
+  if (existing) return existing;
+  return guild.channels.create({
+    name: BACKUP_CHANNEL_NAME,
+    type: ChannelType.GuildText,
+    parent: modLog.parentId,
+    topic: 'Automatische Datenbank-Sicherung 4x am Tag – nur für Admins',
+    permissionOverwrites: [
+      { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+      { id: guild.members.me.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.AttachFiles] }
+    ],
+    reason: 'NaafyrBot Backups'
+  });
+}
+
+// Discord-eigene AFK-Funktion: Wer 30 Min. nichts sagt, wird in 😴┃afk verschoben.
+export async function ensureAfkChannel(guild) {
+  let channel = guild.channels.cache.find(c => c.type === ChannelType.GuildVoice && c.name === AFK_CHANNEL_NAME);
+  if (!channel) {
+    const voiceCategory = guild.channels.cache.find(c => c.type === ChannelType.GuildCategory && c.name.toUpperCase().includes('VOICE') && !c.name.includes('VIP'));
+    channel = await guild.channels.create({
+      name: AFK_CHANNEL_NAME,
+      type: ChannelType.GuildVoice,
+      parent: voiceCategory?.id ?? null,
+      reason: 'NaafyrBot AFK-Channel'
+    });
+    // Rechte wie die VOICE-Kategorie, aber niemand kann sprechen.
+    if (voiceCategory) await channel.lockPermissions().catch(() => {});
+    for (const id of new Set([guild.id, ...channel.permissionOverwrites.cache.keys()])) {
+      if (id === guild.members.me.id) continue;
+      await channel.permissionOverwrites.edit(id, { Speak: false }).catch(() => {});
+    }
+  }
+  if (guild.afkChannelId !== channel.id || guild.afkTimeout !== 1800) {
+    await guild.edit({ afkChannel: channel.id, afkTimeout: 1800, reason: 'AFK nach 30 Minuten' });
+  }
+  return channel;
+}
+
 // Discords Standard-Kategorien beim Server-Erstellen ("Textkanäle" → #allgemein, "Sprachkanäle" → Allgemein).
 // Nur exakte Original-Namen – unsere eigenen Channels (💬┃allgemein, ──── 🔊 VOICE 🔊 ────) bleiben unberührt.
 const DEFAULT_CATEGORY_NAMES = new Set(['textkanäle', 'text channels', 'sprachkanäle', 'voice channels', 'voice']);

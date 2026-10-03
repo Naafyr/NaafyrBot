@@ -5,7 +5,9 @@ import {
 } from 'discord.js';
 import {
   configureLogging,
+  ensureAfkChannel,
   ensureAutoModRules,
+  ensureBackupChannel,
   ensureModLogChannel,
   ensureTestChannel,
   removeDiscordDefaults
@@ -43,6 +45,11 @@ export default {
       await configureLogging(client, guild.id, channel.id);
       const { results, canTimeout } = await ensureAutoModRules(guild, channel.id);
       const testChannel = await ensureTestChannel(guild, channel);
+      const backupChannel = await ensureBackupChannel(guild, channel);
+      const afkChannel = await ensureAfkChannel(guild).catch(error => {
+        logger.warn('[Mod-Setup] AFK-Channel fehlgeschlagen', { guildId: guild.id, error: error.message });
+        return null;
+      });
 
       // Den Channel, in dem der Command gerade läuft, nicht löschen (sonst geht die Antwort ins Leere).
       const removed = await removeDiscordDefaults(guild, { keepChannelId: interaction.channelId });
@@ -54,6 +61,8 @@ export default {
       const lines = [
         `✅ **Moderation eingerichtet** in ${channel} (nur für Admins sichtbar).`,
         `🧪 Dein Test-Channel: ${testChannel.channel}${testChannel.created ? ' (neu)' : ''}`,
+        `💾 Backups 4x am Tag in ${backupChannel}`,
+        afkChannel ? `😴 AFK: wer 30 Min. nichts sagt, landet in ${afkChannel}` : '⚠️ AFK-Channel konnte nicht eingerichtet werden.',
         ...(removed.length > 0 ? [`🗑️ Discord-Standard entfernt: ${removed.join(', ')}`] : []),
         ...(keptCurrent ? ['ℹ️ Den Channel, in dem du gerade bist, habe ich nicht gelöscht. Führ `/mod setup` nochmal in 🧪┃test aus, dann ist er weg.'] : []),
         ...(notSorted.length > 0 ? [`⚠️ Diese Kategorien konnte ich nicht verschieben (Bot hat dort keinen Zugriff): ${notSorted.join(', ')}`] : []),
