@@ -45,7 +45,9 @@ export const TAVERN_RENAMES = {
   '🎭┃rollen-auswahl': '🎒┃ausrüstung',
   '💭┃zitate': '🍺┃kneipenweisheiten',
   '📸┃allgemein-bilder': '🖼️┃bilderwand',
-  '🍕┃essen-bilder': '🍖┃aus-der-küche'
+  '🍕┃essen-bilder': '🍖┃aus-der-küche',
+  '🖥️┃setups': '⚒️┃die-schmiede',
+  '💡┃vorschläge': '📮┃briefkasten-vom-wirt'
 };
 
 // Die Statistik-Kategorie erkennt man sicher an ihren Zähler-Channels.

@@ -371,9 +371,9 @@ export default {
 
             await getOrCreateTextChannel(
                 guild,
-                '🖥️┃setups',
+                '⚒️┃die-schmiede',
                 'Zeig dein PC- und Gaming-Setup',
-                ['setups', 'setup'],
+                ['🖥️┃setups', 'setups', 'setup', 'die-schmiede'],
                 communityCategory
             );
 
@@ -395,9 +395,9 @@ export default {
 
             await getOrCreateTextChannel(
                 guild,
-                '💡┃vorschläge',
+                '📮┃briefkasten-vom-wirt',
                 'Ideen für den Server – jeder Vorschlag bekommt 👍/👎 und einen Thread',
-                ['vorschläge', 'vorschlaege'],
+                ['💡┃vorschläge', 'vorschläge', 'vorschlaege', 'briefkasten-vom-wirt'],
                 communityCategory
             );
 

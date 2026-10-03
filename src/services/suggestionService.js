@@ -1,6 +1,6 @@
 import { logger } from '../utils/logger.js';
 
-export const SUGGESTION_CHANNEL_NAMES = new Set(['💡┃vorschläge', 'vorschläge', 'vorschlaege']);
+export const SUGGESTION_CHANNEL_NAMES = new Set(['📮┃briefkasten-vom-wirt', 'briefkasten-vom-wirt', '💡┃vorschläge', 'vorschläge', 'vorschlaege']);
 
 // Jeder Vorschlag bekommt 👍/👎 zum Abstimmen und einen eigenen Thread zum Diskutieren.
 export async function handleSuggestion(message) {
