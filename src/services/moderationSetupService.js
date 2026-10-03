@@ -277,6 +277,49 @@ export async function ensureAutoModRules(guild, alertChannelId) {
 const recentJoins = new Map();
 const lastRaidAlert = new Map();
 
+// Neuling-Schutz: Accounts jünger als 7 Tage dürfen in den ersten 24 Std. auf dem Server
+// keine Links oder Bilder/Dateien posten. Gibt true zurück, wenn die Nachricht gelöscht wurde.
+const NEWCOMER_HOURS = 24;
+const LINK_PATTERN = /https?:\/\/|discord(?:app)?\.(?:gg|com\/invite)\/|www\./i;
+
+export async function checkNewcomerMessage(message, now = Date.now()) {
+  const { member, author, guild } = message;
+  if (!member || author.bot) return false;
+  if ((now - author.createdTimestamp) / 86_400_000 >= NEW_ACCOUNT_DAYS) return false;
+  if (!member.joinedTimestamp || now - member.joinedTimestamp > NEWCOMER_HOURS * 3_600_000) return false;
+  if (member.permissions?.has(PermissionFlagsBits.ManageMessages)) return false;
+
+  const hasLink = LINK_PATTERN.test(message.content || '');
+  const hasFile = message.attachments?.size > 0;
+  if (!hasLink && !hasFile) return false;
+
+  await message.delete().catch(() => {});
+  const until = Math.floor((member.joinedTimestamp + NEWCOMER_HOURS * 3_600_000) / 1000);
+  await author.send(
+    `🛡️ Deine Nachricht auf **${guild.name}** wurde entfernt: Neue Accounts dürfen in den ersten ${NEWCOMER_HOURS} Stunden keine Links oder Bilder posten (Schutz vor Spam-Bots). Ab <t:${until}:t> geht's. Normaler Text geht natürlich sofort!`
+  ).catch(() => {});
+
+  await logEvent({
+    client: message.client,
+    guildId: guild.id,
+    eventType: 'security.newcomer',
+    data: {
+      title: '🛡️ Neuling-Schutz: Nachricht entfernt',
+      color: 0xFEE75C,
+      lines: [
+        `**User:** ${author.toString()} (${author.tag})`,
+        `**Account erstellt:** <t:${Math.floor(author.createdTimestamp / 1000)}:R>`,
+        `**Channel:** ${message.channel.toString()}`,
+        `**Grund:** ${hasLink ? 'Link' : 'Bild/Datei'}`,
+        ...(message.content ? [`**Inhalt:** ${message.content.slice(0, 500)}`] : [])
+      ],
+      thumbnail: author.displayAvatarURL(),
+      userId: author.id
+    }
+  }).catch(() => {});
+  return true;
+}
+
 export async function checkJoinSecurity(member, now = Date.now()) {
   const { guild, user } = member;
   if (user.bot) return;

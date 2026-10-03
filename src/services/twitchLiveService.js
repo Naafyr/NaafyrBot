@@ -178,14 +178,14 @@ function buildEndedEmbed(activeEmbed, endTime) {
         inline: true
       },
       {
-        name: 'Zeitraum',
-        value: `${formatTime(startTime)} – ${formatTime(endTime)} Uhr`,
-        inline: true
-      },
-      {
         name: 'Dauer',
         value: formatDuration(startTime, endTime),
         inline: true
+      },
+      {
+        name: 'Zeitraum',
+        value: `▶️ Stream-Start: **${formatTime(startTime)} Uhr**\n⏹️ Stream beendet: **${formatTime(endTime)} Uhr**`,
+        inline: false
       }
     )
     .setFooter({ text: `Twitch • Stream beendet • ${formatTime(endTime)} Uhr` })

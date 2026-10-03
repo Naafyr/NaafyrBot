@@ -11,6 +11,7 @@ import { createEmbed } from '../utils/embeds.js';
 import { isCommandEnabled } from '../services/commandAccessService.js';
 import { trackMessage } from '../services/leaderboardService.js';
 import { handleSuggestion } from '../services/suggestionService.js';
+import { checkNewcomerMessage } from '../services/moderationSetupService.js';
 
 export default {
   name: Events.MessageCreate,
@@ -19,6 +20,8 @@ export default {
       if (message.author.bot || !message.guild) return;
 
       logger.debug(`Message received from ${message.author.tag}: ${message.content}`);
+
+      if (await checkNewcomerMessage(message)) return;
 
       trackMessage(message);
       await handleSuggestion(message);
