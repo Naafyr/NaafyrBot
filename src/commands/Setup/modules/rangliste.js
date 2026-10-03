@@ -24,7 +24,7 @@ export default {
     .addSubcommand(sub =>
       sub
         .setName('setup')
-        .setDescription('Postet die Rangliste in 🏆┃leaderboard und legt die Top-3-Rollen an')
+        .setDescription('Postet die Rangliste in 🏆┃ehrentafel und legt die Top-3-Rollen an')
     ),
 
   async execute(interaction) {
@@ -45,7 +45,7 @@ export default {
       if (!channel) {
         return await replyUserError(interaction, {
           type: ErrorTypes.CONFIGURATION,
-          message: 'Der Channel **🏆┃leaderboard** wurde nicht gefunden. Führe zuerst `/setup willkommen` aus.'
+          message: 'Der Channel **🏆┃ehrentafel** wurde nicht gefunden. Führe zuerst `/setup willkommen` aus.'
         });
       }
 
@@ -68,7 +68,7 @@ export default {
         .map(role => role.name);
 
       const lines = [
-        '✅ **Rangliste eingerichtet** in **🏆┃leaderboard**.',
+        '✅ **Rangliste eingerichtet** in **🏆┃ehrentafel**.',
         createdRoles.length > 0 ? `Neue Rollen: ${createdRoles.join(', ')}` : 'Alle Top-3-Rollen waren schon vorhanden.',
         'Gezählt wird ab jetzt, aktualisiert wird alle 10 Minuten.'
       ];

@@ -6,10 +6,11 @@ const TIME_ZONE = 'Europe/Vienna';
 const TOP_LIMIT = 5;
 const CHAT_COOLDOWN_MS = 10_000;
 
-export const LEADERBOARD_CHANNEL_NAMES = new Set(['🏆┃leaderboard', 'leaderboard']);
+export const LEADERBOARD_CHANNEL_NAMES = new Set(['🏆┃ehrentafel', 'ehrentafel', '🏆┃leaderboard', 'leaderboard']);
 const PHOTO_CHANNEL_NAMES = new Set([
   '🍕┃essen-bilder', '🐾┃tier-bilder', '🐾┃haustiere', '📸┃allgemein-bilder', '🖥️┃setups',
-  'essen-bilder', 'tier-bilder', 'haustiere', 'allgemein-bilder', 'setups'
+  'essen-bilder', 'tier-bilder', 'haustiere', 'allgemein-bilder', 'setups',
+  '🍖┃aus-der-küche', '🖼️┃bilderwand', 'aus-der-küche', 'bilderwand'
 ]);
 const AFK_CHANNEL_NAMES = new Set(['😴┃schlafkammer', 'schlafkammer', '😴┃afk', 'afk']);
 

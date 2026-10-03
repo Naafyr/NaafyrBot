@@ -30,7 +30,7 @@ export default {
     .addSubcommand(sub =>
       sub
         .setName('setup')
-        .setDescription('Postet die Game-Auswahl in 🎭┃rollen-auswahl und legt die Rollen an')
+        .setDescription('Postet die Game-Auswahl in 🎒┃ausrüstung und legt die Rollen an')
     ),
 
   async execute(interaction) {
@@ -51,7 +51,7 @@ export default {
       if (!channel) {
         return await replyUserError(interaction, {
           type: ErrorTypes.CONFIGURATION,
-          message: 'Der Channel **🎭┃rollen-auswahl** wurde nicht gefunden. Führe zuerst `/setup willkommen` aus.'
+          message: 'Der Channel **🎒┃ausrüstung** wurde nicht gefunden. Führe zuerst `/setup willkommen` aus.'
         });
       }
 
@@ -84,7 +84,7 @@ export default {
         .map(role => role.name);
 
       const lines = [
-        '✅ **Rollen-Auswahl eingerichtet** in **🎭┃rollen-auswahl**.',
+        '✅ **Rollen-Auswahl eingerichtet** in **🎒┃ausrüstung**.',
         createdRoles.length > 0 ? `Neue Rollen: ${createdRoles.join(', ')}` : 'Alle Game-Rollen waren schon vorhanden.',
         `Game-Chats & Patch-Notes-Channels: ${createdChannels} neu angelegt, sichtbar nur mit der jeweiligen Rolle.`,
         '📰 Die neuesten Patch Notes werden gerade gepostet, danach wird alle 30 Minuten geprüft.',

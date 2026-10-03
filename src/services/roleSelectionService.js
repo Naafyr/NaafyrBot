@@ -7,7 +7,7 @@ import {
   PermissionFlagsBits
 } from 'discord.js';
 
-export const ROLE_SELECTION_CHANNEL_NAMES = new Set(['🎭┃rollen-auswahl', 'rollen-auswahl', 'rollen']);
+export const ROLE_SELECTION_CHANNEL_NAMES = new Set(['🎒┃ausrüstung', 'ausrüstung', '🎭┃rollen-auswahl', 'rollen-auswahl', 'rollen']);
 export const GAMES_CATEGORY_NAME = '▬▬▬ 🎲 SPIELTISCHE 🎲 ▬▬▬';
 export const PATCHNOTES_CATEGORY_NAME = '▬▬▬ 📰 NEUIGKEITEN 📰 ▬▬▬';
 

@@ -6,7 +6,7 @@ import { InteractionHelper } from '../utils/interactionHelper.js';
 
 // "Was nun?" nach dem Verifizieren: kurze Tour + Buttons, die direkt in die Channels springen.
 const NEXT_STEPS = [
-    { names: ['🎭┃rollen-auswahl', 'rollen-auswahl'], emoji: '🎭', label: 'Rollen-Auswahl', text: 'Wähl deine **Games** und schalte Game-Chats & Patch Notes frei' },
+    { names: ['🎒┃ausrüstung', 'ausrüstung', '🎭┃rollen-auswahl', 'rollen-auswahl'], emoji: '🎒', label: 'Ausrüstung', text: 'Wähl deine **Games** und schalte Game-Chats & Patch Notes frei' },
     { names: ['🎂┃geburtstage', 'geburtstage'], emoji: '🎂', label: 'Geburtstag', text: 'Trag deinen **Geburtstag** ein – wir gratulieren dir' },
     { names: ['➕┃tisch-nehmen', 'tisch-nehmen', '➕┃channel-erstellen', 'channel-erstellen'], emoji: '🔊', label: 'Voice-Raum', text: 'Join den Channel und du bekommst deinen **eigenen Voice-Raum**' }
 ];

@@ -11,7 +11,7 @@ import {
 import { logger } from '../../utils/logger.js';
 
 export const QUOTE_COMMAND_NAME = 'Als Zitat speichern';
-const QUOTE_CHANNEL_NAMES = new Set(['💭┃zitate', 'zitate']);
+const QUOTE_CHANNEL_NAMES = new Set(['🍺┃kneipenweisheiten', 'kneipenweisheiten', '💭┃zitate', 'zitate']);
 const MAX_REMEMBERED = 500;
 
 function savedKey(guildId) {
@@ -22,7 +22,7 @@ function reply(interaction, text, color = 0x9B59B6) {
   return interaction.reply({ embeds: [new EmbedBuilder().setColor(color).setDescription(text)], flags: MessageFlags.Ephemeral });
 }
 
-// Rechtsklick auf eine Nachricht → Apps → "Als Zitat speichern" → landet in 💭┃zitate.
+// Rechtsklick auf eine Nachricht → Apps → "Als Zitat speichern" → landet in 🍺┃kneipenweisheiten.
 export default {
   data: new ContextMenuCommandBuilder()
     .setName(QUOTE_COMMAND_NAME)
@@ -44,7 +44,7 @@ export default {
       candidate.type === ChannelType.GuildText && QUOTE_CHANNEL_NAMES.has(candidate.name)
     );
     if (!channel) {
-      return reply(interaction, '❌ Der Channel **💭┃zitate** wurde nicht gefunden.', 0xED4245);
+      return reply(interaction, '❌ Der Channel **🍺┃kneipenweisheiten** wurde nicht gefunden.', 0xED4245);
     }
 
     const saved = (await client.db.get(savedKey(interaction.guildId))) || [];

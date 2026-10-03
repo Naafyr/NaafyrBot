@@ -7,7 +7,7 @@ export const CATEGORY_ORDER = [
   { name: '▬▬▬ 📊 AUSHANG 📊 ▬▬▬', keywords: ['STATISTIK', 'AUSHANG'] },
   { name: '▬▬▬ 🚪 EINGANG 🚪 ▬▬▬', keywords: ['MOIN', 'EINGANG'] },
   { name: '▬▬▬ 🔔 GLOCKE 🔔 ▬▬▬', keywords: ['CONTENT', 'GLOCKE'] },
-  { name: '▬▬▬ 🏆 LEADERBOARD 🏆 ▬▬▬', keywords: ['LEADERBOARD'] },
+  { name: '▬▬▬ 🏆 EHRENTAFEL 🏆 ▬▬▬', keywords: ['LEADERBOARD', 'EHRENTAFEL'] },
   { name: '▬▬▬ 🛎️ EMPFANG 🛎️ ▬▬▬', keywords: ['WILLKOMMEN', 'EMPFANG'] },
   { name: '▬▬▬ 🍻 STAMMTISCH 🍻 ▬▬▬', keywords: ['COMMUNITY', 'STAMMTISCH'] },
   { name: '▬▬▬ 🛏️ ZIMMER 🛏️ ▬▬▬', keywords: ['VOICE', '🛏️ ZIMMER'] },
@@ -38,7 +38,14 @@ export const TAVERN_RENAMES = {
   '😴┃afk': '😴┃schlafkammer',
   '💬┃vip-chat': '🗨️┃hinterzimmer-geflüster',
   '🔊┃VIP-Lounge': '🔊┃Hinterzimmer',
-  '⏳┃vip-warteraum': '⏳┃vor-der-tür'
+  '⏳┃vip-warteraum': '⏳┃vor-der-tür',
+  '▬▬▬ 🏆 LEADERBOARD 🏆 ▬▬▬': '▬▬▬ 🏆 EHRENTAFEL 🏆 ▬▬▬',
+  '🏆┃leaderboard': '🏆┃ehrentafel',
+  '📜┃regeln': '📜┃hausordnung',
+  '🎭┃rollen-auswahl': '🎒┃ausrüstung',
+  '💭┃zitate': '🍺┃kneipenweisheiten',
+  '📸┃allgemein-bilder': '🖼️┃bilderwand',
+  '🍕┃essen-bilder': '🍖┃aus-der-küche'
 };
 
 // Die Statistik-Kategorie erkennt man sicher an ihren Zähler-Channels.

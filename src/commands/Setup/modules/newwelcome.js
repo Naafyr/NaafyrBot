@@ -163,43 +163,43 @@ async function applyVisibility(guild, verifiedRole, welcomeChannel, rulesChannel
 function buildRulesEmbed(guild) {
     return new EmbedBuilder()
         .setColor(0xB84DFF)
-        .setTitle('📜 SERVER-REGELN')
+        .setTitle('📜 HAUSORDNUNG DER TAVERNE')
         .setDescription([
-            `Willkommen auf **${guild.name}**! 👋`,
-            'Bitte lies dir die Regeln kurz durch, bevor du dich verifizierst.',
+            `Willkommen in der **${guild.name}**! 🍺`,
+            'Bevor du dir einen Platz am Tresen suchst, lies dir kurz die Hausordnung durch.',
             '',
-            '🤝 **1. Respektvoll miteinander umgehen**',
-            'Behandle andere Mitglieder freundlich und respektvoll. Beleidigungen, Provokationen und unnötiger Streit gehören hier nicht hin.',
+            '🤝 **§1 – Benimm dich wie ein Gast**',
+            'Sei freundlich und respektvoll. Wer pöbelt, beleidigt oder Streit sucht, sitzt schneller vor der Tür, als er „Prost“ sagen kann.',
             '',
-            '🚫 **2. Kein Spam**',
-            'Kein unnötiges Spammen von Nachrichten, Emojis, Bildern, Sounds oder Erwähnungen.',
+            '🚫 **§2 – Kein Gebrüll am Tresen**',
+            'Kein Spam – weder Nachrichten, Emojis, Bilder, Sounds noch Erwähnungen.',
             '',
-            '📢 **3. Keine Werbung**',
-            'Werbung für eigene Server, Social-Media-Kanäle, Streams oder andere Inhalte ist ohne vorherige Erlaubnis nicht gestattet.',
+            '📢 **§3 – Keine Flugblätter an der Wand**',
+            'Werbung für eigene Server, Kanäle oder Streams nur mit Erlaubnis vom Wirt.',
             '',
-            '🔞 **4. Keine unangemessenen Inhalte**',
-            'Extremistische, diskriminierende, sexuelle oder anderweitig problematische Inhalte haben auf dem Server nichts verloren.',
+            '🔞 **§4 – Was nicht in eine Taverne gehört, bleibt draußen**',
+            'Keine extremistischen, diskriminierenden, sexuellen oder sonst problematischen Inhalte.',
             '',
-            '🙅 **5. Andere Mitglieder nicht nerven oder bedrängen**',
-            'Respektiere, wenn Leute gerade miteinander reden oder spielen.',
+            '🙅 **§5 – Lass die anderen in Ruhe trinken**',
+            'Nerv oder bedräng niemanden. Respektiere, wenn Leute gerade miteinander reden oder spielen.',
             '',
-            '🎙️ **6. Rücksicht im Voice-Chat**',
-            'Kein absichtliches Schreien, Soundboard-Spam oder extrem laute Geräusche.',
+            '🎙️ **§6 – Zimmerlautstärke im Voice**',
+            'Kein absichtliches Schreien, kein Soundboard-Spam, keine Ohrenschmerz-Geräusche.',
             '',
-            '🎥 **7. Aufnahmen nur mit Zustimmung**',
-            'Wenn Stimmen oder Gespräche aufgenommen oder veröffentlicht werden sollen, sollten die betroffenen Personen vorher Bescheid wissen.',
+            '🎥 **§7 – Was in der Taverne gesagt wird …**',
+            '… bleibt in der Taverne. Aufnahmen nur, wenn alle Beteiligten Bescheid wissen.',
             '',
-            '📂 **8. Nutzt die richtigen Channels**',
-            'Versucht Inhalte in die dafür vorgesehenen Channels zu schicken.',
+            '📂 **§8 – Jeder Krug an seinen Platz**',
+            'Nutze die passenden Channels – Bilder zu Bildern, Clips zu Clips.',
             '',
-            '📌 **9. Discord-Regeln gelten weiterhin**',
-            'Die Nutzungsbedingungen und Community-Richtlinien von Discord gelten selbstverständlich auch hier.',
+            '📌 **§9 – Das Gesetz des Landes gilt auch hier**',
+            'Es gelten die [Discord-Nutzungsbedingungen](https://discord.com/terms) und [Community-Richtlinien](https://discord.com/guidelines), Mindestalter 13 Jahre.',
             '',
-            '✅ **VERIFIZIERUNG**',
+            '🍻 **EINTRITT IN DIE TAVERNE**',
             '',
-            'Mit einem Klick auf **✅ Verifizieren** bestätigst du, dass du die Regeln gelesen hast und akzeptierst.',
+            'Mit einem Klick auf **✅ Verifizieren** bestätigst du, dass du die Hausordnung gelesen hast.',
             '',
-            'Danach erhältst du Zugriff auf die normalen Server-Channels.'
+            'Danach darfst du dir einen Platz suchen – aus 🧭 Reisender wird 🍺 Gast.'
         ].join('\n'));
 }
 
@@ -281,15 +281,15 @@ export default {
 
             const leaderboardCategory = await getOrCreateCategory(
                 guild,
-                '▬▬▬ 🏆 LEADERBOARD 🏆 ▬▬▬',
-                ['Leaderboard', 'Leaderboards', 'Ranglisten']
+                '▬▬▬ 🏆 EHRENTAFEL 🏆 ▬▬▬',
+                ['▬▬▬ 🏆 LEADERBOARD 🏆 ▬▬▬', 'Leaderboard', 'Leaderboards', 'Ranglisten']
             );
 
             const rulesChannel = await getOrCreateTextChannel(
                 guild,
-                '📜┃regeln',
-                'Regeln lesen und verifizieren',
-                ['regeln'],
+                '📜┃hausordnung',
+                'Hausordnung lesen und eintreten',
+                ['📜┃regeln', 'regeln', 'hausordnung'],
                 moinCategory
             );
 
@@ -339,9 +339,9 @@ export default {
 
             await getOrCreateTextChannel(
                 guild,
-                '🎭┃rollen-auswahl',
-                'Rollen auswählen',
-                ['rollen', 'rollen-auswahl', '🎭┃rollen'],
+                '🎒┃ausrüstung',
+                'Such dir deine Games und Pings aus',
+                ['🎭┃rollen-auswahl', 'rollen', 'rollen-auswahl', '🎭┃rollen', 'ausrüstung'],
                 welcomeCategory
             );
 
@@ -355,9 +355,9 @@ export default {
 
             await getOrCreateTextChannel(
                 guild,
-                '🍕┃essen-bilder',
-                'Bilder von Essen und Getränken',
-                ['essen-bilder', 'food', 'essen'],
+                '🍖┃aus-der-küche',
+                'Was gibt es heute? Bilder von Essen und Getränken',
+                ['🍕┃essen-bilder', 'essen-bilder', 'food', 'essen', 'aus-der-küche'],
                 communityCategory
             );
 
@@ -379,17 +379,17 @@ export default {
 
             await getOrCreateTextChannel(
                 guild,
-                '📸┃allgemein-bilder',
-                'Allgemeine Bilder und Fotos',
-                ['allgemein-bilder', 'bilder', 'fotos'],
+                '🖼️┃bilderwand',
+                'Bilder und Fotos aller Art',
+                ['📸┃allgemein-bilder', 'allgemein-bilder', 'bilder', 'fotos', 'bilderwand'],
                 communityCategory
             );
 
             await getOrCreateTextChannel(
                 guild,
-                '💭┃zitate',
+                '🍺┃kneipenweisheiten',
                 'Zitate und Sprüche – Rechtsklick auf eine Nachricht → Apps → Als Zitat speichern',
-                ['zitate'],
+                ['💭┃zitate', 'zitate', 'kneipenweisheiten'],
                 communityCategory
             );
 
@@ -434,9 +434,9 @@ export default {
 
             await getOrCreateTextChannel(
                 guild,
-                '🏆┃leaderboard',
-                'Server-Leaderboard',
-                ['leaderboard'],
+                '🏆┃ehrentafel',
+                'Wer in der Taverne am aktivsten ist',
+                ['🏆┃leaderboard', 'leaderboard', 'ehrentafel'],
                 leaderboardCategory
             );
 
