@@ -7,6 +7,7 @@ export const SLASH_ONLY_COMMANDS = new Set([
   'configwizard',
   'help',
   'setup',
+  'backup',
   'embedbuilder',
   'wipedata',
   'apply',

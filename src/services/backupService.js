@@ -1,4 +1,4 @@
-import { gzipSync } from 'node:zlib';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { AttachmentBuilder, ChannelType } from 'discord.js';
 import { pgDb } from '../utils/database.js';
 import { BACKUP_CHANNEL_NAME } from './moderationSetupService.js';
@@ -19,6 +19,62 @@ export async function createBackup() {
   }
   const rowCount = Object.values(data.tables).reduce((sum, rows) => sum + rows.length, 0);
   return { buffer: gzipSync(JSON.stringify(data)), tableCount: tables.length, rowCount };
+}
+
+// Liest eine Backup-Datei (.json.gz) und gibt eine Übersicht zurück – noch ohne etwas zu ändern.
+export function readBackup(buffer) {
+  const data = JSON.parse(gunzipSync(buffer).toString('utf8'));
+  if (!data?.tables || typeof data.tables !== 'object') throw new Error('Keine gültige Backup-Datei');
+  const rowCount = Object.values(data.tables).reduce((sum, rows) => sum + rows.length, 0);
+  return { data, tableCount: Object.keys(data.tables).length, rowCount, createdAt: data.createdAt };
+}
+
+const quote = name => `"${String(name).replace(/"/g, '""')}"`;
+// JSON-Spalten kommen als Objekt/Array zurück → für pg wieder als JSON-Text übergeben.
+const toParam = value => (value !== null && typeof value === 'object' && !(value instanceof Date) ? JSON.stringify(value) : value);
+
+// Spielt ein Backup ein: alles in EINER Transaktion – bei einem Fehler bleibt die Datenbank wie sie war.
+export async function restoreBackup(data) {
+  const pool = pgDb.pool;
+  if (!pool) throw new Error('Datenbank nicht verbunden');
+  const { rows: existing } = await pool.query(
+    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'"
+  );
+  const known = new Set(existing.map(row => row.table_name));
+  const tables = Object.keys(data.tables).filter(name => known.has(name));
+  // JSON-Spalten immer als JSON-Text übergeben (auch Strings/Zahlen darin).
+  const { rows: jsonColumns } = await pool.query(
+    "SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public' AND data_type IN ('json', 'jsonb')"
+  );
+  const isJson = new Set(jsonColumns.map(row => `${row.table_name}.${row.column_name}`));
+
+  const db = await pool.connect();
+  try {
+    await db.query('BEGIN');
+    if (tables.length) await db.query(`TRUNCATE ${tables.map(quote).join(', ')} RESTART IDENTITY CASCADE`);
+    let restored = 0;
+    for (const name of tables) {
+      for (const row of data.tables[name]) {
+        const columns = Object.keys(row);
+        if (!columns.length) continue;
+        const placeholders = columns.map((_, index) => `$${index + 1}`).join(', ');
+        await db.query(
+          `INSERT INTO ${quote(name)} (${columns.map(quote).join(', ')}) VALUES (${placeholders})`,
+          columns.map(column => (isJson.has(`${name}.${column}`) && row[column] !== null
+            ? JSON.stringify(row[column])
+            : toParam(row[column])))
+        );
+        restored++;
+      }
+    }
+    await db.query('COMMIT');
+    return { tableCount: tables.length, rowCount: restored, skipped: Object.keys(data.tables).filter(name => !known.has(name)) };
+  } catch (error) {
+    await db.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    db.release();
+  }
 }
 
 function stamp(date = new Date()) {

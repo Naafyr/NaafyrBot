@@ -12,6 +12,7 @@ const TWITCH_API_BASE = 'https://api.twitch.tv/helix';
 const TWITCH_TOKEN_URL = 'https://id.twitch.tv/oauth2/token';
 const LIVE_CHANNEL_NAMES = new Set(['🔴┃live', 'live']);
 const ACTIVE_FOOTER = 'Twitch • LIVE';
+const OFFLINE_GRACE_MS = 15 * 60_000;
 
 let cachedToken = null;
 let cachedTokenExpiresAt = 0;
@@ -133,8 +134,8 @@ function formatDuration(start, end) {
   return `${minutes} Min.`;
 }
 
-function buildLiveEmbed(stream, channel) {
-  const startedAt = new Date(stream.started_at);
+function buildLiveEmbed(stream, channel, startOverride = null) {
+  const startedAt = new Date(startOverride || stream.started_at);
   const embed = new EmbedBuilder()
     .setColor(0x9146FF)
     .setTitle('🔴 Naafyr ist live!')
@@ -234,10 +235,23 @@ async function handleGuild(client, guild, stream, config) {
   if (!channel) return;
 
   const activeMessage = await findActiveBotMessage(channel, client.user.id);
+  const offlineKey = `guild:${guild.id}:twitch:offlineSince`;
+  const offlineSince = activeMessage ? Number(await client.db?.get?.(offlineKey).catch(() => null)) || null : null;
 
   if (stream) {
-    if (activeMessage && sameStream(activeMessage, stream)) {
-      const newEmbed = buildLiveEmbed(stream, config.channel);
+    // Kurzer Aussetzer (innerhalb des Puffers) → gleicher Stream, kein neuer Ping, Startzeit bleibt.
+    // Nach einem Aussetzer hat Twitch eine neue Startzeit → die merken wir uns, damit es derselbe Stream bleibt.
+    const resumeKey = `guild:${guild.id}:twitch:resumedStart`;
+    const resumed = Boolean(activeMessage && offlineSince);
+    const resumedBefore = activeMessage && (await client.db?.get?.(resumeKey).catch(() => null)) === stream.started_at;
+    if (activeMessage && (resumed || resumedBefore || sameStream(activeMessage, stream))) {
+      if (resumed) {
+        await client.db?.delete?.(offlineKey).catch(() => {});
+        await client.db?.set?.(resumeKey, stream.started_at).catch(() => {});
+      }
+      const continued = resumed || resumedBefore;
+      const originalStart = continued ? activeMessage.embeds[0]?.timestamp : null;
+      const newEmbed = buildLiveEmbed(stream, config.channel, originalStart);
       await activeMessage.edit({
         embeds: [newEmbed],
         components: [buildStreamButton(config.channel)]
@@ -273,7 +287,17 @@ async function handleGuild(client, guild, stream, config) {
   }
 
   if (activeMessage) {
-    const endedEmbed = buildEndedEmbed(activeMessage.embeds[0], new Date());
+    // Erst nach 15 Min. am Stück offline als beendet werten (Twitch-Aussetzer, Stream-Absturz).
+    const now = Date.now();
+    if (!offlineSince) {
+      await client.db?.set?.(offlineKey, now);
+      return;
+    }
+    if (now - offlineSince < OFFLINE_GRACE_MS) return;
+    await client.db?.delete?.(offlineKey).catch(() => {});
+
+    // Ende = Zeitpunkt, ab dem der Stream wirklich weg war.
+    const endedEmbed = buildEndedEmbed(activeMessage.embeds[0], new Date(offlineSince));
 
     await activeMessage.edit({
       content: endedContent(endedEmbed),
