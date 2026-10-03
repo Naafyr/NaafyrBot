@@ -8,7 +8,7 @@ import { InteractionHelper } from '../utils/interactionHelper.js';
 const NEXT_STEPS = [
     { names: ['🎭┃rollen-auswahl', 'rollen-auswahl'], emoji: '🎭', label: 'Rollen-Auswahl', text: 'Wähl deine **Games** und schalte Game-Chats & Patch Notes frei' },
     { names: ['🎂┃geburtstage', 'geburtstage'], emoji: '🎂', label: 'Geburtstag', text: 'Trag deinen **Geburtstag** ein – wir gratulieren dir' },
-    { names: ['➕┃channel-erstellen', 'channel-erstellen'], emoji: '🔊', label: 'Voice-Raum', text: 'Join den Channel und du bekommst deinen **eigenen Voice-Raum**' }
+    { names: ['➕┃tisch-nehmen', 'tisch-nehmen', '➕┃channel-erstellen', 'channel-erstellen'], emoji: '🔊', label: 'Voice-Raum', text: 'Join den Channel und du bekommst deinen **eigenen Voice-Raum**' }
 ];
 
 export function verifiedNextStep(guild) {

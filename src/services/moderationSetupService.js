@@ -9,10 +9,10 @@ import {
 import { getGuildConfig, updateGuildConfig } from './config/guildConfig.js';
 import { logEvent } from './loggingService.js';
 import { logger } from '../utils/logger.js';
-import { CATEGORY_ORDER, migrateCategoryNames } from '../utils/categoryOrder.js';
+import { CATEGORY_ORDER, matchesCategoryEntry, migrateCategoryNames } from '../utils/categoryOrder.js';
 import { SOCIAL_LOG_CHANNEL_NAME } from '../utils/statusReporter.js';
 
-export const MOD_CATEGORY_NAME = '▬▬▬ 🛡️ MODERATION 🛡️ ▬▬▬';
+export const MOD_CATEGORY_NAME = '▬▬▬ 🗝️ KELLER 🗝️ ▬▬▬';
 export const MOD_LOG_NAME = '📝┃mod-log';
 
 const NEW_ACCOUNT_DAYS = 7;
@@ -74,7 +74,7 @@ export async function ensureTestChannel(guild, modLog) {
 }
 
 export const BACKUP_CHANNEL_NAME = '💾┃backups';
-export const AFK_CHANNEL_NAME = '😴┃afk';
+export const AFK_CHANNEL_NAME = '😴┃schlafkammer';
 
 // Backups landen als Datei in diesem Admin-Channel (Railway-Speicher ist nicht dauerhaft).
 export async function ensureBackupChannel(guild, modLog) {
@@ -112,9 +112,9 @@ export async function ensureSocialLogChannel(guild, modLog) {
 
 // Discord-eigene AFK-Funktion: Wer 30 Min. nichts sagt, wird in 😴┃afk verschoben.
 export async function ensureAfkChannel(guild) {
-  let channel = guild.channels.cache.find(c => c.type === ChannelType.GuildVoice && c.name === AFK_CHANNEL_NAME);
+  let channel = guild.channels.cache.find(c => c.type === ChannelType.GuildVoice && (c.name === AFK_CHANNEL_NAME || c.name === '😴┃afk'));
   if (!channel) {
-    const voiceCategory = guild.channels.cache.find(c => c.type === ChannelType.GuildCategory && c.name.toUpperCase().includes('VOICE') && !c.name.includes('VIP'));
+    const voiceCategory = guild.channels.cache.find(c => c.type === ChannelType.GuildCategory && (c.name.toUpperCase().includes('VOICE') || c.name.includes('🛏️ ZIMMER')) && !c.name.includes('VIP') && !c.name.includes('HINTERZIMMER'));
     channel = await guild.channels.create({
       name: AFK_CHANNEL_NAME,
       type: ChannelType.GuildVoice,
@@ -174,7 +174,7 @@ export async function removeDiscordDefaults(guild, { keepChannelId = null } = {}
   // Leere Doppel unserer Kategorien (z. B. eine alte "VOICE"-Kategorie neben ▬▬▬ 🔊 VOICE 🔊 ▬▬▬).
   const allCategories = guild.channels.cache.filter(channel => channel.type === ChannelType.GuildCategory);
   for (const category of allCategories.values()) {
-    const entry = CATEGORY_ORDER.find(item => category.name.toUpperCase().includes(item.keyword));
+    const entry = CATEGORY_ORDER.find(item => matchesCategoryEntry(item, category.name));
     if (!entry || category.name === entry.name) continue;
 
     const realOneExists = allCategories.some(other => other.id !== category.id && other.name === entry.name);

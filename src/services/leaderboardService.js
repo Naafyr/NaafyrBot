@@ -11,7 +11,7 @@ const PHOTO_CHANNEL_NAMES = new Set([
   '🍕┃essen-bilder', '🐾┃tier-bilder', '🐾┃haustiere', '📸┃allgemein-bilder', '🖥️┃setups',
   'essen-bilder', 'tier-bilder', 'haustiere', 'allgemein-bilder', 'setups'
 ]);
-const AFK_CHANNEL_NAMES = new Set(['😴┃afk', 'afk']);
+const AFK_CHANNEL_NAMES = new Set(['😴┃schlafkammer', 'schlafkammer', '😴┃afk', 'afk']);
 
 export const CATEGORIES = {
   chat: {

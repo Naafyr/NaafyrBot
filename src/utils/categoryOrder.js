@@ -4,18 +4,42 @@ import { logger } from './logger.js';
 // Gewünschte Reihenfolge von oben nach unten. Erkannt wird über den exakten Namen,
 // sonst über ein Stichwort im Namen (falls eine Kategorie früher anders hieß).
 export const CATEGORY_ORDER = [
-  { name: '▬▬▬ 📊 SERVER-STATISTIKEN 📊 ▬▬▬', keyword: 'STATISTIK' },
-  { name: '▬▬▬ 👋 MOIN 👋 ▬▬▬', keyword: 'MOIN' },
-  { name: '▬▬▬ 🎬 CONTENT 🎬 ▬▬▬', keyword: 'CONTENT' },
-  { name: '▬▬▬ 🏆 LEADERBOARD 🏆 ▬▬▬', keyword: 'LEADERBOARD' },
-  { name: '▬▬▬ 🎭 WILLKOMMEN 🎭 ▬▬▬', keyword: 'WILLKOMMEN' },
-  { name: '▬▬▬ 💬 COMMUNITY 💬 ▬▬▬', keyword: 'COMMUNITY' },
-  { name: '▬▬▬ 🔊 VOICE 🔊 ▬▬▬', keyword: 'VOICE' },
-  { name: '▬▬▬ 💎 VIP 💎 ▬▬▬', keyword: 'VIP' },
-  { name: '▬▬▬ 🎮 GAMES 🎮 ▬▬▬', keyword: 'GAMES' },
-  { name: '▬▬▬ 📰 PATCH-NOTES 📰 ▬▬▬', keyword: 'PATCH' },
-  { name: '▬▬▬ 🛡️ MODERATION 🛡️ ▬▬▬', keyword: 'MODERATION' }
+  { name: '▬▬▬ 📊 AUSHANG 📊 ▬▬▬', keywords: ['STATISTIK', 'AUSHANG'] },
+  { name: '▬▬▬ 🚪 EINGANG 🚪 ▬▬▬', keywords: ['MOIN', 'EINGANG'] },
+  { name: '▬▬▬ 🔔 GLOCKE 🔔 ▬▬▬', keywords: ['CONTENT', 'GLOCKE'] },
+  { name: '▬▬▬ 🏆 LEADERBOARD 🏆 ▬▬▬', keywords: ['LEADERBOARD'] },
+  { name: '▬▬▬ 🛎️ EMPFANG 🛎️ ▬▬▬', keywords: ['WILLKOMMEN', 'EMPFANG'] },
+  { name: '▬▬▬ 🍻 STAMMTISCH 🍻 ▬▬▬', keywords: ['COMMUNITY', 'STAMMTISCH'] },
+  { name: '▬▬▬ 🛏️ ZIMMER 🛏️ ▬▬▬', keywords: ['VOICE', '🛏️ ZIMMER'] },
+  { name: '▬▬▬ 🕯️ HINTERZIMMER 🕯️ ▬▬▬', keywords: ['VIP', 'HINTERZIMMER'] },
+  { name: '▬▬▬ 🎲 SPIELTISCHE 🎲 ▬▬▬', keywords: ['GAMES', 'SPIELTISCHE'] },
+  { name: '▬▬▬ 📰 NEUIGKEITEN 📰 ▬▬▬', keywords: ['PATCH', 'NEUIGKEITEN'] },
+  { name: '▬▬▬ 🗝️ KELLER 🗝️ ▬▬▬', keywords: ['MODERATION', 'KELLER'] }
 ];
+
+export const matchesCategoryEntry = (entry, name) => entry.keywords.some(keyword => name.toUpperCase().includes(keyword));
+
+// Taverne-Umbenennung (04.10.2026): alte Namen → neue. Läuft beim Start, benennt nur um.
+export const TAVERN_RENAMES = {
+  '▬▬▬ 📊 SERVER-STATISTIKEN 📊 ▬▬▬': '▬▬▬ 📊 AUSHANG 📊 ▬▬▬',
+  '▬▬▬ 👋 MOIN 👋 ▬▬▬': '▬▬▬ 🚪 EINGANG 🚪 ▬▬▬',
+  '▬▬▬ 🎬 CONTENT 🎬 ▬▬▬': '▬▬▬ 🔔 GLOCKE 🔔 ▬▬▬',
+  '▬▬▬ 🎭 WILLKOMMEN 🎭 ▬▬▬': '▬▬▬ 🛎️ EMPFANG 🛎️ ▬▬▬',
+  '▬▬▬ 💬 COMMUNITY 💬 ▬▬▬': '▬▬▬ 🍻 STAMMTISCH 🍻 ▬▬▬',
+  '▬▬▬ 🔊 VOICE 🔊 ▬▬▬': '▬▬▬ 🛏️ ZIMMER 🛏️ ▬▬▬',
+  '▬▬▬ 💎 VIP 💎 ▬▬▬': '▬▬▬ 🕯️ HINTERZIMMER 🕯️ ▬▬▬',
+  '▬▬▬ 🎮 GAMES 🎮 ▬▬▬': '▬▬▬ 🎲 SPIELTISCHE 🎲 ▬▬▬',
+  '▬▬▬ 📰 PATCH-NOTES 📰 ▬▬▬': '▬▬▬ 📰 NEUIGKEITEN 📰 ▬▬▬',
+  '▬▬▬ 🛡️ MODERATION 🛡️ ▬▬▬': '▬▬▬ 🗝️ KELLER 🗝️ ▬▬▬',
+  '👋┃willkommen': '📜┃gästebuch',
+  '💬┃allgemein': '🍺┃tresen',
+  '➕┃channel-erstellen': '➕┃tisch-nehmen',
+  '🔒┃privaten-channel-erstellen': '🔒┃zimmer-mieten',
+  '😴┃afk': '😴┃schlafkammer',
+  '💬┃vip-chat': '🗨️┃hinterzimmer-geflüster',
+  '🔊┃VIP-Lounge': '🔊┃Hinterzimmer',
+  '⏳┃vip-warteraum': '⏳┃vor-der-tür'
+};
 
 // Die Statistik-Kategorie erkennt man sicher an ihren Zähler-Channels.
 const COUNTER_CHANNEL = /^(👥|🟢|🚀) /;
@@ -35,7 +59,7 @@ export function desiredCategoryOrder(categories, channels = []) {
       const stats = categories.find(category => !used.has(category.id) && isStatsCategory(category, channels));
       if (stats) return pick(stats);
     }
-    const byKeyword = categories.find(category => !used.has(category.id) && category.name.toUpperCase().includes(entry.keyword));
+    const byKeyword = categories.find(category => !used.has(category.id) && matchesCategoryEntry(entry, category.name));
     return byKeyword ? pick(byKeyword) : null;
   }).filter(Boolean);
 
@@ -45,14 +69,15 @@ export function desiredCategoryOrder(categories, channels = []) {
   return [...known, ...others];
 }
 
-// Alte Kategorie-Namen "──── X ────" auf den neuen Stil "▬▬▬ X ▬▬▬" umbenennen.
+// Alte Namen umbenennen: "──── X ────" → "▬▬▬ X ▬▬▬" und die Taverne-Umbenennung (Kategorien + Channels).
 export async function migrateCategoryNames(guild) {
   for (const category of guild.channels.cache.values()) {
-    if (category.type !== ChannelType.GuildCategory) continue;
-    const match = category.name.match(/^─{3,} (.+) ─{3,}$/);
-    if (!match) continue;
+    const match = category.type === ChannelType.GuildCategory ? category.name.match(/^─{3,} (.+) ─{3,}$/) : null;
+    const styled = match ? `▬▬▬ ${match[1]} ▬▬▬` : category.name;
+    const target = TAVERN_RENAMES[styled] || styled;
+    if (target === category.name) continue;
     try {
-      await category.setName(`▬▬▬ ${match[1]} ▬▬▬`, 'Neuer Kategorie-Stil');
+      await category.setName(target, 'Taverne: neuer Name');
     } catch (error) {
       logger.warn('[Kategorien] Umbenennen fehlgeschlagen', { guildId: guild.id, category: category.name, error: error.message });
     }

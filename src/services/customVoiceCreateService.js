@@ -11,8 +11,8 @@ import { logger } from '../utils/logger.js';
 import { Mutex } from '../utils/mutex.js';
 import { GAMES } from './roleSelectionService.js';
 
-const PUBLIC_TRIGGER_NAMES = new Set(['➕┃channel-erstellen', 'channel-erstellen']);
-const PRIVATE_TRIGGER_NAMES = new Set(['🔒┃privaten-channel-erstellen', 'privaten-channel-erstellen', 'premium-channel-erstellen']);
+const PUBLIC_TRIGGER_NAMES = new Set(['➕┃tisch-nehmen', 'tisch-nehmen', '➕┃channel-erstellen', 'channel-erstellen']);
+const PRIVATE_TRIGGER_NAMES = new Set(['🔒┃zimmer-mieten', 'zimmer-mieten', '🔒┃privaten-channel-erstellen', 'privaten-channel-erstellen', 'premium-channel-erstellen']);
 const VERIFIED_ROLE_NAME = 'verifiziert';
 
 // Räume werden über ihre IDs in der DB verfolgt, nicht über den Namen.

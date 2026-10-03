@@ -251,32 +251,32 @@ export default {
 
             const moinCategory = await getOrCreateCategory(
                 guild,
-                '▬▬▬ 👋 MOIN 👋 ▬▬▬',
-                ['Moin', 'Start', 'Start Hier']
+                '▬▬▬ 🚪 EINGANG 🚪 ▬▬▬',
+                ['▬▬▬ 👋 MOIN 👋 ▬▬▬', 'Moin', 'Start', 'Start Hier']
             );
 
             const contentCategory = await getOrCreateCategory(
                 guild,
-                '▬▬▬ 🎬 CONTENT 🎬 ▬▬▬',
-                ['Content']
+                '▬▬▬ 🔔 GLOCKE 🔔 ▬▬▬',
+                ['▬▬▬ 🎬 CONTENT 🎬 ▬▬▬', 'Content']
             );
 
             const welcomeCategory = await getOrCreateCategory(
                 guild,
-                '▬▬▬ 🎭 WILLKOMMEN 🎭 ▬▬▬',
-                ['Willkommen']
+                '▬▬▬ 🛎️ EMPFANG 🛎️ ▬▬▬',
+                ['▬▬▬ 🎭 WILLKOMMEN 🎭 ▬▬▬', 'Willkommen']
             );
 
             const communityCategory = await getOrCreateCategory(
                 guild,
-                '▬▬▬ 💬 COMMUNITY 💬 ▬▬▬',
-                ['Community', 'Treffpunkt', 'Chats']
+                '▬▬▬ 🍻 STAMMTISCH 🍻 ▬▬▬',
+                ['▬▬▬ 💬 COMMUNITY 💬 ▬▬▬', 'Community', 'Treffpunkt', 'Chats']
             );
 
             const voiceCategory = await getOrCreateCategory(
                 guild,
-                '▬▬▬ 🔊 VOICE 🔊 ▬▬▬',
-                ['Voice', 'Sprachkanäle', 'Sprachchannel']
+                '▬▬▬ 🛏️ ZIMMER 🛏️ ▬▬▬',
+                ['▬▬▬ 🔊 VOICE 🔊 ▬▬▬', 'Voice', 'Sprachkanäle', 'Sprachchannel']
             );
 
             const leaderboardCategory = await getOrCreateCategory(
@@ -331,9 +331,9 @@ export default {
 
             const welcomeChannel = await getOrCreateTextChannel(
                 guild,
-                '👋┃willkommen',
-                'Willkommen auf dem Server',
-                ['willkommen'],
+                '📜┃gästebuch',
+                'Wer neu in die Taverne kommt, wird hier eingetragen',
+                ['👋┃willkommen', 'willkommen', 'gästebuch'],
                 welcomeCategory
             );
 
@@ -347,9 +347,9 @@ export default {
 
             await getOrCreateTextChannel(
                 guild,
-                '💬┃allgemein',
-                'Allgemeiner Community-Chat',
-                ['allgemein'],
+                '🍺┃tresen',
+                'Der Tresen – hier quatschen alle',
+                ['💬┃allgemein', 'allgemein', 'tresen'],
                 communityCategory
             );
 
@@ -403,22 +403,22 @@ export default {
 
             await getOrCreateVoiceChannel(
                 guild,
-                '➕┃channel-erstellen',
-                ['channel-erstellen'],
+                '➕┃tisch-nehmen',
+                ['➕┃channel-erstellen', 'channel-erstellen', 'tisch-nehmen'],
                 voiceCategory
             );
 
             await getOrCreateVoiceChannel(
                 guild,
-                '🔒┃privaten-channel-erstellen',
-                ['privaten-channel-erstellen', 'premium-channel-erstellen'],
+                '🔒┃zimmer-mieten',
+                ['🔒┃privaten-channel-erstellen', 'privaten-channel-erstellen', 'premium-channel-erstellen', 'zimmer-mieten'],
                 voiceCategory
             );
 
             await getOrCreateVoiceChannel(
                 guild,
-                '😴┃afk',
-                ['afk'],
+                '😴┃schlafkammer',
+                ['😴┃afk', 'afk', 'schlafkammer'],
                 voiceCategory
             );
 
