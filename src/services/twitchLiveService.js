@@ -192,6 +192,12 @@ function buildEndedEmbed(activeEmbed, endTime) {
     .setTimestamp(endTime);
 }
 
+// Text über der Box: statt "ist jetzt live" steht nach dem Stream "war live" + Dauer.
+function endedContent(endedEmbed) {
+  const duration = endedEmbed.toJSON().fields.find(field => field.name === 'Dauer')?.value;
+  return `⚫ **Naafyr war live**${duration ? ` – ${duration}` : ''}`;
+}
+
 function buildStreamButton(channel) {
   return new ActionRowBuilder().addComponents(
     new ButtonBuilder()
@@ -242,6 +248,8 @@ async function handleGuild(client, guild, stream, config) {
     if (activeMessage) {
       const endedEmbed = buildEndedEmbed(activeMessage.embeds[0], new Date());
       await activeMessage.edit({
+        content: endedContent(endedEmbed),
+        allowedMentions: { parse: [] },
         embeds: [endedEmbed],
         components: []
       });
@@ -268,6 +276,8 @@ async function handleGuild(client, guild, stream, config) {
     const endedEmbed = buildEndedEmbed(activeMessage.embeds[0], new Date());
 
     await activeMessage.edit({
+      content: endedContent(endedEmbed),
+      allowedMentions: { parse: [] },
       embeds: [endedEmbed],
       components: []
     });
