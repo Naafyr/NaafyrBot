@@ -19,19 +19,19 @@ export const CATEGORIES = {
     title: '🍺 TRESENREDNER – die meisten Nachrichten',
     color: 0x5865F2,
     short: value => `${value}`,
-    roles: ['Schreibkünstler', 'Aktiver Chatter', 'Tastaturkrieger']
+    roles: ['🍺 Großmaul der Taverne', '🗣️ Schwätzer vom Dienst', '💬 Plaudertasche']
   },
   voice: {
     title: '🪑 SITZFLEISCH – die meiste Zeit im Voice',
     color: 0x57F287,
     short: formatMinutesShort,
-    roles: ['Sprechmeister', 'Voice-Veteran', 'Dauerredner']
+    roles: ['🪵 Gehört zum Inventar', '🖼️ Hängt schon an der Wand', '🪑 Fast schon Möbelstück']
   },
   photo: {
     title: '🎨 HOFMALER – die meisten Bilder',
     color: 0xEB459E,
     short: value => `${value}`,
-    roles: ['Meisterfotograf', 'Fotograf', 'Schnappschütze']
+    roles: ['🎨 Hofmaler', '🖌️ Wandmaler', '✏️ Skizzenzeichner']
   }
 };
 
@@ -298,7 +298,25 @@ function findRole(guild, name) {
   return guild.roles.cache.find(role => role.name === name && !role.managed) || null;
 }
 
+// Alte Rollennamen (vor der Taverne) → neue. Nur umbenennen, Mitglieder behalten ihre Rolle.
+const LEGACY_ROLE_NAMES = {
+  chat: ['Schreibkünstler', 'Aktiver Chatter', 'Tastaturkrieger'],
+  voice: ['Sprechmeister', 'Voice-Veteran', 'Dauerredner'],
+  photo: ['Meisterfotograf', 'Fotograf', 'Schnappschütze']
+};
+
+async function migrateLegacyRoleNames(guild) {
+  for (const [category, oldNames] of Object.entries(LEGACY_ROLE_NAMES)) {
+    for (const [index, oldName] of oldNames.entries()) {
+      const newName = CATEGORIES[category].roles[index];
+      const old = findRole(guild, oldName);
+      if (old && !findRole(guild, newName)) await old.setName(newName, 'Taverne: neuer Rollenname').catch(() => {});
+    }
+  }
+}
+
 export async function ensureLeaderboardRoles(guild) {
+  await migrateLegacyRoleNames(guild);
   const created = [];
   for (const config of Object.values(CATEGORIES)) {
     for (const [index, name] of config.roles.entries()) {
@@ -321,6 +339,7 @@ async function syncRoles(client, guild) {
   const botMember = guild.members.me;
   if (!botMember) return;
 
+  await migrateLegacyRoleNames(guild);
   await guild.members.fetch().catch(() => null);
 
   for (const [category, config] of Object.entries(CATEGORIES)) {
