@@ -25,7 +25,7 @@ const SEPARATOR_LABELS = {
   pings: '🔕 PINGS 🔕'
 };
 export const SEPARATORS = Object.fromEntries(Object.entries(SEPARATOR_LABELS)
-  .map(([key, label]) => [key, `─── ${label} ───${'\u2800'.repeat(40)}`]));
+  .map(([key, label]) => [key, `━━━ ${label} ━━━${'\u2800'.repeat(40)}`]));
 
 // Findet einen Trenner auch unter altem Namen (z. B. kurzer Balken).
 function findSeparator(guild, key) {
