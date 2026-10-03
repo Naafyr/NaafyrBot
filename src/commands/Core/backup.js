@@ -41,6 +41,9 @@ export default {
         });
       }
 
+      if (interaction.user.id !== interaction.guild.ownerId) {
+        return await InteractionHelper.safeEditReply(interaction, { content: '🔒 Nur der Server-Besitzer kann Backups einspielen.' });
+      }
       const file = interaction.options.getAttachment('datei');
       if (!file.name.endsWith('.json.gz')) {
         return await InteractionHelper.safeEditReply(interaction, { content: '❌ Bitte eine **.json.gz**-Datei vom Bot hochladen.' });

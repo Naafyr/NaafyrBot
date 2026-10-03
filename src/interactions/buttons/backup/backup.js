@@ -1,4 +1,4 @@
-import { AttachmentBuilder, PermissionFlagsBits } from 'discord.js';
+import { AttachmentBuilder } from 'discord.js';
 import { pendingRestores } from '../../../commands/Core/backup.js';
 import { createBackup, restoreBackup } from '../../../services/backupService.js';
 import { logger } from '../../../utils/logger.js';
@@ -13,8 +13,9 @@ export default {
       return interaction.update({ content: '✖️ Abgebrochen – nichts wurde geändert.', components: [] });
     }
 
-    if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
-      return interaction.reply({ content: '🔒 Nur Admins.', ephemeral: true });
+    // Wiederherstellen darf nur der Server-Besitzer.
+    if (interaction.user.id !== interaction.guild?.ownerId) {
+      return interaction.reply({ content: '🔒 Nur der Server-Besitzer kann Backups einspielen.', ephemeral: true });
     }
     if (!pending || pending.expiresAt < Date.now()) {
       pendingRestores.delete(interaction.user.id);

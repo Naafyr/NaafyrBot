@@ -162,7 +162,7 @@ function buildLiveEmbed(stream, channel, startOverride = null) {
   return embed;
 }
 
-function buildEndedEmbed(activeEmbed, endTime) {
+function buildEndedEmbed(activeEmbed, endTime, games = []) {
   const raw = activeEmbed.toJSON ? activeEmbed.toJSON() : activeEmbed;
   const startTime = raw.timestamp ? new Date(raw.timestamp) : new Date(endTime);
   const title = raw.description || 'Stream';
@@ -174,8 +174,8 @@ function buildEndedEmbed(activeEmbed, endTime) {
     .setDescription(title)
     .addFields(
       {
-        name: 'Spiel',
-        value: game,
+        name: games.length > 1 ? 'Gestreamt' : 'Spiel',
+        value: games.length > 1 ? games.join(' → ') : game,
         inline: true
       },
       {
@@ -220,6 +220,19 @@ async function findActiveBotMessage(channel, clientUserId) {
   }) || null;
 }
 
+// Alle Games eines Streams in Reihenfolge (ohne direkte Wiederholung).
+async function loadGames(client, key) {
+  const games = await client.db?.get?.(key).catch(() => null);
+  return Array.isArray(games) ? games : [];
+}
+
+async function rememberGame(client, key, game) {
+  if (!game) return;
+  const games = await loadGames(client, key);
+  if (games.at(-1) === game) return;
+  await client.db?.set?.(key, [...games, game].slice(-10)).catch(() => {});
+}
+
 function sameStream(message, stream) {
   const timestamp = message?.embeds?.[0]?.timestamp;
   if (!timestamp || !stream?.started_at) return false;
@@ -236,6 +249,7 @@ async function handleGuild(client, guild, stream, config) {
 
   const activeMessage = await findActiveBotMessage(channel, client.user.id);
   const offlineKey = `guild:${guild.id}:twitch:offlineSince`;
+  const gamesKey = `guild:${guild.id}:twitch:games`;
   const offlineSince = activeMessage ? Number(await client.db?.get?.(offlineKey).catch(() => null)) || null : null;
 
   if (stream) {
@@ -251,6 +265,7 @@ async function handleGuild(client, guild, stream, config) {
       }
       const continued = resumed || resumedBefore;
       const originalStart = continued ? activeMessage.embeds[0]?.timestamp : null;
+      await rememberGame(client, gamesKey, stream.game_name);
       const newEmbed = buildLiveEmbed(stream, config.channel, originalStart);
       await activeMessage.edit({
         embeds: [newEmbed],
@@ -260,7 +275,7 @@ async function handleGuild(client, guild, stream, config) {
     }
 
     if (activeMessage) {
-      const endedEmbed = buildEndedEmbed(activeMessage.embeds[0], new Date());
+      const endedEmbed = buildEndedEmbed(activeMessage.embeds[0], new Date(), await loadGames(client, gamesKey));
       await activeMessage.edit({
         content: endedContent(endedEmbed),
         allowedMentions: { parse: [] },
@@ -268,6 +283,8 @@ async function handleGuild(client, guild, stream, config) {
         components: []
       });
     }
+
+    await client.db?.set?.(gamesKey, stream.game_name ? [stream.game_name] : []).catch(() => {});
 
     // Pingt alle, die den Channel sehen. Wer "Keine Stream-Pings" hat, sieht ihn nicht.
     await channel.send({
@@ -297,7 +314,7 @@ async function handleGuild(client, guild, stream, config) {
     await client.db?.delete?.(offlineKey).catch(() => {});
 
     // Ende = Zeitpunkt, ab dem der Stream wirklich weg war.
-    const endedEmbed = buildEndedEmbed(activeMessage.embeds[0], new Date(offlineSince));
+    const endedEmbed = buildEndedEmbed(activeMessage.embeds[0], new Date(offlineSince), await loadGames(client, gamesKey));
 
     await activeMessage.edit({
       content: endedContent(endedEmbed),
