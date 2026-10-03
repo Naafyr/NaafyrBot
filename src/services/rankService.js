@@ -17,6 +17,7 @@ export const VIP_ROLE = { name: '💎 Ehrengast', color: 0x9B59B6 };
 // Rollen-Trenner (Emoji vorne und hinten).
 export const SEPARATORS = {
   team: '━━━ 👑 TEAM 👑 ━━━',
+  server: '━━━ 🏠 SERVER 🏠 ━━━',
   rank: '━━━ 🍺 RANG 🍺 ━━━',
   top: '━━━ 🏆 RANGLISTE 🏆 ━━━',
   games: '━━━ 🎮 GAMES 🎮 ━━━',
@@ -43,6 +44,7 @@ function groupRoles(guild) {
     team: sortDesc([...guild.roles.cache.values()].filter(role =>
       !role.managed && role.id !== guild.id && !isSeparatorName(role.name)
       && role.permissions.has(PermissionFlagsBits.Administrator) && role.id !== me?.roles.highest.id)),
+    server: [findVerifiedRole(guild)].filter(Boolean),
     // Ehrengast oben, dann höchster Rang zuerst
     rank: [findRole(guild, VIP_ROLE.name), ...[...RANKS].reverse().map(rank => findRole(guild, rank.name))].filter(Boolean),
     top: sortDesc(byNames(names(Object.values(LEADERBOARD_CATEGORIES).flatMap(category => category.roles)))),
@@ -70,25 +72,41 @@ export async function setupRoles(guild) {
     if ((await ensureRole(guild, name, { hoist: false })).created) created.push(name);
   }
 
-  // Team-Rollen über der Bot-Rolle kann der Bot nicht verschieben → Team-Trenner dann weglassen.
+  const { teamSkipped } = await sortRoles(guild);
+  return { created, teamSkipped };
+}
+
+// Bringt ALLE Rollen unter der Bot-Rolle in die Wunsch-Reihenfolge:
+// je Gruppe erst der Trenner, dann ihre Rollen; alle übrigen Rollen darunter (alte Reihenfolge bleibt).
+export async function sortRoles(guild) {
   const botTop = guild.members.me.roles.highest.position;
   const groups = groupRoles(guild);
+  // Team-Rollen über der Bot-Rolle kann der Bot nicht verschieben → Team-Trenner dann weglassen.
   const teamSkipped = groups.team.some(role => role.position >= botTop);
 
   const layout = [];
   for (const [key, roles] of Object.entries(groups)) {
     if (key === 'team' && teamSkipped) continue;
-    if (roles.length === 0) continue;
-    layout.push(findRole(guild, SEPARATORS[key]), ...roles);
+    const separator = findRole(guild, SEPARATORS[key]);
+    if (roles.length === 0 || !separator) continue;
+    layout.push(separator, ...roles);
   }
 
-  // Von oben nach unten direkt unter die Bot-Rolle legen.
-  const positions = layout.filter(Boolean).map((role, index) => ({ role: role.id, position: botTop - 1 - index }))
-    .filter(entry => entry.position > 0);
+  const movable = role => role.id !== guild.id && role.position < botTop;
+  const inLayout = new Set(layout.map(role => role.id));
+  const rest = [...guild.roles.cache.values()]
+    .filter(role => movable(role) && !inLayout.has(role.id))
+    .sort((a, b) => b.position - a.position);
+  const desired = [...layout.filter(movable), ...rest];
+
+  const current = [...guild.roles.cache.values()].filter(movable).sort((a, b) => b.position - a.position);
+  if (desired.every((role, index) => current[index]?.id === role.id)) return { teamSkipped, changed: false };
+
+  // Positionen 1..n von unten, oberste direkt unter der Bot-Rolle.
+  const positions = desired.map((role, index) => ({ role: role.id, position: desired.length - index }));
   await guild.roles.setPositions(positions).catch(error =>
     logger.warn('[Ränge] Rollen konnten nicht sortiert werden', { guildId: guild.id, error: error.message }));
-
-  return { created, teamSkipped };
+  return { teamSkipped, changed: true };
 }
 
 export function rankFor({ days, messages, voiceMinutes }) {
@@ -100,6 +118,7 @@ export function rankFor({ days, messages, voiceMinutes }) {
 export async function syncRanks(client, guild) {
   const rankRoles = RANKS.map(rank => findRole(guild, rank.name));
   if (rankRoles.some(role => !role)) return; // /setup rollen noch nicht gelaufen
+  await sortRoles(guild).catch(() => {}); // z. B. neue Game-Rollen unter ihren Trenner schieben
 
   const verified = findVerifiedRole(guild);
   const botTop = guild.members.me.roles.highest.position;
