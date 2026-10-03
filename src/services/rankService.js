@@ -109,9 +109,16 @@ export async function sortRoles(guild) {
   // Positionen 1..n von unten, oberste direkt unter der Bot-Rolle.
   const positions = desired.map((role, index) => ({ role: role.id, position: desired.length - index }));
   let sortError = null;
-  await guild.roles.setPositions(positions).catch(error => {
-    sortError = error.message;
-    logger.warn('[Ränge] Rollen konnten nicht sortiert werden', { guildId: guild.id, error: error.message });
+  await guild.roles.setPositions(positions).catch(async error => {
+    logger.warn('[Ränge] Sammel-Sortierung fehlgeschlagen, versuche einzeln', { guildId: guild.id, error: error.message });
+    // Einzeln: von unten nach oben jede Rolle direkt unter die Bot-Rolle legen → am Ende stimmt die Reihenfolge.
+    const failed = [];
+    for (const role of [...desired].reverse()) {
+      const target = guild.members.me.roles.highest.position - 1;
+      if (role.position === target) continue;
+      await role.setPosition(target).catch(err => failed.push(`${role.name} (${err.message})`));
+    }
+    if (failed.length) sortError = `Diese Rollen ließen sich nicht verschieben: ${failed.join(', ')}`;
   });
   return { teamSkipped, changed: true, sortError, blocked };
 }
