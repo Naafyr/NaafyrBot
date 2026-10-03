@@ -8,6 +8,7 @@ import {
   ensureAfkChannel,
   ensureAutoModRules,
   ensureBackupChannel,
+  ensureSocialLogChannel,
   ensureModLogChannel,
   ensureTestChannel,
   removeDiscordDefaults
@@ -46,6 +47,7 @@ export default {
       const { results, canTimeout } = await ensureAutoModRules(guild, channel.id);
       const testChannel = await ensureTestChannel(guild, channel);
       const backupChannel = await ensureBackupChannel(guild, channel);
+      const socialLog = await ensureSocialLogChannel(guild, channel);
       const afkChannel = await ensureAfkChannel(guild).catch(error => {
         logger.warn('[Mod-Setup] AFK-Channel fehlgeschlagen', { guildId: guild.id, error: error.message });
         return null;
@@ -62,6 +64,7 @@ export default {
         `✅ **Moderation eingerichtet** in ${channel} (nur für Admins sichtbar).`,
         `🧪 Dein Test-Channel: ${testChannel.channel}${testChannel.created ? ' (neu)' : ''}`,
         `💾 Backups 4x am Tag in ${backupChannel}`,
+        `📡 Probleme mit Twitch/YouTube/Clips/Patch-Notes in ${socialLog}`,
         afkChannel ? `😴 AFK: wer 30 Min. nichts sagt, landet in ${afkChannel}` : '⚠️ AFK-Channel konnte nicht eingerichtet werden.',
         ...(removed.length > 0 ? [`🗑️ Discord-Standard entfernt: ${removed.join(', ')}`] : []),
         ...(keptCurrent ? ['ℹ️ Den Channel, in dem du gerade bist, habe ich nicht gelöscht. Führ `/setup moderation` nochmal in 🧪┃test aus, dann ist er weg.'] : []),

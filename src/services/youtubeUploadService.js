@@ -7,6 +7,7 @@ import {
   EmbedBuilder
 } from 'discord.js';
 import { logger } from '../utils/logger.js';
+import { reportProblem } from '../utils/statusReporter.js';
 
 const YOUTUBE_HANDLE = 'Naafyr';
 // Fest eingetragen: Die @Naafyr-Seite liefert von Servern aus oft nur die Cookie-Zustimmungsseite.
@@ -289,6 +290,7 @@ export async function checkYouTubeUploads(client) {
     try {
       await checkYouTubeForGuild(client, guild, latest);
     } catch (error) {
+      reportProblem('📺 YouTube', `Upload-Post fehlgeschlagen: ${error.message}`);
       logger.error('[YouTube] Failed to update Discord upload feed', {
         guildId: guild.id,
         error: error.message

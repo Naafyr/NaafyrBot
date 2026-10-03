@@ -10,6 +10,7 @@ import { getGuildConfig, updateGuildConfig } from './config/guildConfig.js';
 import { logEvent } from './loggingService.js';
 import { logger } from '../utils/logger.js';
 import { CATEGORY_ORDER, migrateCategoryNames } from '../utils/categoryOrder.js';
+import { SOCIAL_LOG_CHANNEL_NAME } from '../utils/statusReporter.js';
 
 export const MOD_CATEGORY_NAME = '▬▬▬ 🛡️ MODERATION 🛡️ ▬▬▬';
 export const MOD_LOG_NAME = '📝┃mod-log';
@@ -89,6 +90,23 @@ export async function ensureBackupChannel(guild, modLog) {
       { id: guild.members.me.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.AttachFiles] }
     ],
     reason: 'NaafyrBot Backups'
+  });
+}
+
+// Probleme mit Twitch/YouTube/Clips/Patch-Notes landen hier (nur Admins).
+export async function ensureSocialLogChannel(guild, modLog) {
+  const existing = guild.channels.cache.find(channel => channel.type === ChannelType.GuildText && channel.name === SOCIAL_LOG_CHANNEL_NAME);
+  if (existing) return existing;
+  return guild.channels.create({
+    name: SOCIAL_LOG_CHANNEL_NAME,
+    type: ChannelType.GuildText,
+    parent: modLog.parentId,
+    topic: 'Meldungen, wenn Twitch, YouTube, Clips oder Patch-Notes nicht funktionieren – nur für Admins',
+    permissionOverwrites: [
+      { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+      { id: guild.members.me.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks] }
+    ],
+    reason: 'NaafyrBot Social-Log'
   });
 }
 

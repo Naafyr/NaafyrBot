@@ -7,6 +7,7 @@ import {
   EmbedBuilder
 } from 'discord.js';
 import { logger } from '../utils/logger.js';
+import { reportProblem } from '../utils/statusReporter.js';
 
 const TWITCH_API_BASE = 'https://api.twitch.tv/helix';
 const TWITCH_TOKEN_URL = 'https://id.twitch.tv/oauth2/token';
@@ -336,6 +337,7 @@ export async function checkTwitchLive(client) {
 
   if (!config) {
     logger.warn('[TwitchLive] Missing TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET or TWITCH_CHANNEL');
+    reportProblem('🔴 Twitch-Live', 'Twitch-Zugangsdaten fehlen in Railway (TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET / TWITCH_CHANNEL).');
     return;
   }
 
@@ -349,6 +351,7 @@ export async function checkTwitchLive(client) {
     try {
       await handleGuild(client, guild, stream, config);
     } catch (error) {
+      reportProblem('🔴 Twitch-Live', `Live-Box konnte nicht aktualisiert werden: ${error.message}`);
       logger.error('[TwitchLive] Failed to update Discord live status', {
         guildId: guild.id,
         error: error.message

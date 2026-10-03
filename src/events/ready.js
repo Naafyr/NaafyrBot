@@ -5,6 +5,7 @@ import { reconcileTicketPanels, reconcileVerificationPanels } from "../services/
 import { cleanupCustomVoiceRooms } from "../services/customVoiceCreateService.js";
 import { checkBirthdays } from "../services/birthdayService.js";
 import { sortCategories } from "../utils/categoryOrder.js";
+import { initStatusReporter } from "../utils/statusReporter.js";
 
 export default {
   name: Events.ClientReady,
@@ -18,6 +19,7 @@ export default {
       startupLog(`Serving ${client.guilds.cache.size} guild(s)`);
       startupLog(`Loaded ${client.commands.size} commands`);
 
+      initStatusReporter(client);
       await cleanupCustomVoiceRooms(client);
       startupLog("Custom voice rooms cleaned up");
 

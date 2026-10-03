@@ -7,6 +7,7 @@ import {
   EmbedBuilder
 } from 'discord.js';
 import { logger } from '../utils/logger.js';
+import { reportProblem } from '../utils/statusReporter.js';
 import { GAMES } from './roleSelectionService.js';
 
 const HTTP = { timeout: 15_000, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NaafyrBot/1.0)' } };
@@ -208,6 +209,7 @@ export async function checkPatchNotes(client) {
       items = await fetchPatchNotes(game);
     } catch (error) {
       logger.warn('[PatchNotes] Source failed', { game: gameKey, error: error.message });
+      reportProblem(`📰 Patch-Notes ${game.name}`, `Quelle nicht erreichbar: ${error.message}`);
       continue;
     }
 
@@ -216,6 +218,7 @@ export async function checkPatchNotes(client) {
         await postForGuild(client, guild, gameKey, game, items);
       } catch (error) {
         logger.error('[PatchNotes] Post failed', { guildId: guild.id, game: gameKey, error: error.message });
+        reportProblem(`📰 Patch-Notes ${game.name}`, `Posten fehlgeschlagen: ${error.message}`);
       }
     }
   }

@@ -21,6 +21,7 @@ import { buildUserErrorEmbed } from './embeds.js';
 import { MessageFlags } from 'discord.js';
 import { getErrorMetadata, getDefaultErrorCodeByType, resolveErrorCode, ErrorCodes } from './errorRegistry.js';
 import { InteractionHelper } from './interactionHelper.js';
+import { SOCIAL_TASKS, reportProblem } from './statusReporter.js';
 
 // Re-export so consumers only ever need to import from errorHandler.js
 export { ErrorCodes, getErrorMetadata, resolveErrorCode, getDefaultErrorCodeByType } from './errorRegistry.js';
@@ -542,6 +543,10 @@ export function handleTaskError(taskName, error, context = {}) {
         stack: error?.stack,
         context
     });
+
+    if (SOCIAL_TASKS[taskName]) {
+        reportProblem(SOCIAL_TASKS[taskName], error?.message || String(error)).catch(() => {});
+    }
 }
 
 /**

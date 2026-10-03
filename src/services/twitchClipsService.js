@@ -6,6 +6,7 @@ import {
   EmbedBuilder
 } from 'discord.js';
 import { logger } from '../utils/logger.js';
+import { reportProblem } from '../utils/statusReporter.js';
 import { getTwitchConfig, twitchGet } from './twitchLiveService.js';
 
 const CLIP_CHANNEL_NAMES = new Set(['✂️┃clips-und-highlights', 'clips-und-highlights', 'clips']);
@@ -105,6 +106,7 @@ export async function checkTwitchClips(client) {
       await postNewClips(client, guild, clips);
     } catch (error) {
       logger.error('[TwitchClips] Failed to post clips', { guildId: guild.id, error: error.message });
+      reportProblem('✂️ Twitch-Clips', `Clips konnten nicht gepostet werden: ${error.message}`);
     }
   }
 }
