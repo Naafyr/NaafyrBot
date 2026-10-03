@@ -363,9 +363,9 @@ export default {
 
             await getOrCreateTextChannel(
                 guild,
-                '🐾┃tier-bilder',
-                'Bilder von Tieren und Haustieren',
-                ['tier-bilder', 'tiere', 'haustiere'],
+                '🐾┃haustiere',
+                'Zeig deine Haustiere',
+                ['🐾┃tier-bilder', 'tier-bilder', 'tiere', 'haustiere'],
                 communityCategory
             );
 
