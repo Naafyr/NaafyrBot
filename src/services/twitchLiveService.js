@@ -254,6 +254,16 @@ async function loadActiveMessage(client, channel, recordKey) {
   return { record: record && typeof record === 'object' ? record : null, message: isLive ? message : null };
 }
 
+// Doppelte Live-Boxen (z. B. vom alten Fehler) löschen – nur eigene, die aktive bleibt.
+async function deleteDuplicateLiveMessages(channel, keepId, botId) {
+  const messages = await channel.messages.fetch({ limit: 50 }).catch(() => null);
+  if (!messages) return;
+  const duplicates = messages.filter(message => message.id !== keepId && message.author.id === botId
+    && message.embeds?.[0]?.footer?.text === ACTIVE_FOOTER);
+  for (const message of duplicates.values()) await message.delete().catch(() => {});
+  if (duplicates.size) logger.info('[TwitchLive] Doppelte Live-Nachrichten gelöscht', { count: duplicates.size });
+}
+
 async function handleGuild(client, guild, stream, config) {
   const channel = findLiveChannel(guild);
   if (!channel) return;
@@ -272,6 +282,10 @@ async function handleGuild(client, guild, stream, config) {
     const boxFresh = boxStart && Date.now() - new Date(boxStart).getTime() < 24 * 3_600_000;
     if (activeMessage && (boxFresh || sameStream(activeMessage, stream))) {
       if (offlineSince) await client.db?.delete?.(offlineKey).catch(() => {});
+      if (record?.messageId !== activeMessage.id) {
+        await client.db?.set?.(recordKey, { messageId: activeMessage.id, postedAt: record?.postedAt || Date.now(), ended: false }).catch(() => {});
+      }
+      await deleteDuplicateLiveMessages(channel, activeMessage.id, client.user.id);
       await rememberGame(client, gamesKey, stream.game_name);
       await activeMessage.edit({
         embeds: [buildLiveEmbed(stream, config.channel, boxStart || null)],
@@ -331,6 +345,7 @@ async function handleGuild(client, guild, stream, config) {
 
     // Nachricht nicht lesbar → nur als beendet merken.
     if (!activeMessage) return;
+    await deleteDuplicateLiveMessages(channel, activeMessage.id, client.user.id);
 
     // Ende = Zeitpunkt, ab dem der Stream wirklich weg war.
     const endedEmbed = buildEndedEmbed(activeMessage.embeds[0], new Date(offlineSince), await loadGames(client, gamesKey));
