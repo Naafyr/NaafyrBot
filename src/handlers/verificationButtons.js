@@ -18,7 +18,7 @@ export function verifiedNextStep(guild) {
 
     const embed = new EmbedBuilder()
         .setColor(0x57F287)
-        .setTitle('✅ Willkommen im Rudel! 🐺')
+        .setTitle('✅ Willkommen in der Taverne! 🍻')
         .setDescription([
             'Du bist verifiziert und siehst jetzt alle Channels. 🎉',
             '',

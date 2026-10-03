@@ -61,7 +61,7 @@ export default {
                             '',
                             welcomeMessage,
                             '',
-                            `🐺 **Rudel #${packNumber}**`
+                            `🍺 **Gast #${packNumber}**`
                         ].join('\n'))
                         .setThumbnail(user.displayAvatarURL())
                         .setTimestamp()

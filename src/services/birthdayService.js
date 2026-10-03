@@ -15,7 +15,7 @@ const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'A
 
 const CONGRATS = [
   '🎉 Alles Gute zum Geburtstag, {user}! Lass dich heute ordentlich feiern! 🥳',
-  '🎂 Das ganze Rudel gratuliert {user} zum Geburtstag! Hab einen mega Tag! 🐺',
+  '🎂 Die ganze Taverne stößt auf {user} an! Prost und alles Gute zum Geburtstag! 🍻',
   '🎈 Happy Birthday, {user}! Level up im echten Leben! 🎮',
   '🥳 Heute ist der große Tag von {user}! Alles Liebe und Gute zum Geburtstag! 🎁',
   '🎊 {user} hat Geburtstag! Kuchen für alle – und fleißig gratulieren! 🍰'
