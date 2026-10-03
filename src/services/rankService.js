@@ -72,8 +72,8 @@ export async function setupRoles(guild) {
     if ((await ensureRole(guild, name, { hoist: false })).created) created.push(name);
   }
 
-  const { teamSkipped } = await sortRoles(guild);
-  return { created, teamSkipped };
+  const { teamSkipped, sortError, blocked } = await sortRoles(guild);
+  return { created, teamSkipped, sortError, blocked };
 }
 
 // Bringt ALLE Rollen unter der Bot-Rolle in die Wunsch-Reihenfolge:
@@ -100,13 +100,20 @@ export async function sortRoles(guild) {
   const desired = [...layout.filter(movable), ...rest];
 
   const current = [...guild.roles.cache.values()].filter(movable).sort((a, b) => b.position - a.position);
-  if (desired.every((role, index) => current[index]?.id === role.id)) return { teamSkipped, changed: false };
+  // Rollen über der Bot-Rolle kann der Bot nie verschieben → melden, damit man die Bot-Rolle hochzieht.
+  const blocked = Object.entries(groups).filter(([key]) => key !== 'team').flatMap(([, roles]) => roles)
+    .concat(Object.values(SEPARATORS).map(name => findRole(guild, name)).filter(Boolean))
+    .filter(role => role.position >= botTop).map(role => role.name);
+  if (desired.every((role, index) => current[index]?.id === role.id)) return { teamSkipped, changed: false, blocked };
 
   // Positionen 1..n von unten, oberste direkt unter der Bot-Rolle.
   const positions = desired.map((role, index) => ({ role: role.id, position: desired.length - index }));
-  await guild.roles.setPositions(positions).catch(error =>
-    logger.warn('[Ränge] Rollen konnten nicht sortiert werden', { guildId: guild.id, error: error.message }));
-  return { teamSkipped, changed: true };
+  let sortError = null;
+  await guild.roles.setPositions(positions).catch(error => {
+    sortError = error.message;
+    logger.warn('[Ränge] Rollen konnten nicht sortiert werden', { guildId: guild.id, error: error.message });
+  });
+  return { teamSkipped, changed: true, sortError, blocked };
 }
 
 export function rankFor({ days, messages, voiceMinutes }) {

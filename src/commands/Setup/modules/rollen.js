@@ -33,7 +33,7 @@ export default {
         });
       }
 
-      const { created, teamSkipped } = await setupRoles(guild);
+      const { created, teamSkipped, sortError, blocked } = await setupRoles(guild);
       const vipCreated = await setupVipArea(guild);
       await sortCategories(guild);
       await syncRanks(client, guild);
@@ -45,6 +45,8 @@ export default {
         '',
         ...(created.length > 0 ? [`🆕 Neu angelegt: ${created.join(', ')}`] : []),
         ...(vipCreated.length > 0 ? [`💎 VIP-Bereich: ${vipCreated.join(', ')}`] : ['💎 VIP-Bereich war schon da.']),
+        ...(sortError ? ['', `❌ Sortieren fehlgeschlagen: ${sortError}`] : []),
+        ...(blocked?.length ? ['', `⚠️ Diese Rollen stehen **über der Bot-Rolle** und können nicht einsortiert werden: ${blocked.join(', ')}`] : []),
         ...(teamSkipped ? ['', '⚠️ Team-Trenner fehlt: Zieh die **Bot-Rolle** in den Server-Einstellungen ganz nach oben und führ `/setup rollen` nochmal aus.'] : []),
         '',
         'ℹ️ Ränge werden alle 10 Minuten automatisch aktualisiert.'
