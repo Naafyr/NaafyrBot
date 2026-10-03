@@ -11,6 +11,7 @@ export const CATEGORY_ORDER = [
   { name: '──── 🎭 WILLKOMMEN 🎭 ────', keyword: 'WILLKOMMEN' },
   { name: '──── 💬 COMMUNITY 💬 ────', keyword: 'COMMUNITY' },
   { name: '──── 🔊 VOICE 🔊 ────', keyword: 'VOICE' },
+  { name: '──── 💎 VIP 💎 ────', keyword: 'VIP' },
   { name: '──── 🎮 GAMES 🎮 ────', keyword: 'GAMES' },
   { name: '──── 📰 PATCH-NOTES 📰 ────', keyword: 'PATCH' },
   { name: '──── 🛡️ MODERATION 🛡️ ────', keyword: 'MODERATION' }

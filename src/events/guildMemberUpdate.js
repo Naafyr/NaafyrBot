@@ -2,6 +2,7 @@ import { Events } from 'discord.js';
 import { logEvent, EVENT_TYPES } from '../services/loggingService.js';
 import { GAMES, NOTIFY_OPTIONS } from '../services/roleSelectionService.js';
 import { CATEGORIES as LEADERBOARD_CATEGORIES } from '../services/leaderboardService.js';
+import { AUTO_ROLE_NAMES } from '../services/rankService.js';
 import { logger } from '../utils/logger.js';
 
 // Rollen, die der Bot oder die Mitglieder selbst per Button vergeben → würden den Mod-Log nur zuspammen.
@@ -9,7 +10,8 @@ const SELF_SERVICE_ROLES = new Set([
   'verifiziert',
   ...Object.values(GAMES).flatMap(game => [game.name, ...game.aliases]),
   ...Object.values(NOTIFY_OPTIONS).map(option => option.name),
-  ...Object.values(LEADERBOARD_CATEGORIES).flatMap(category => category.roles)
+  ...Object.values(LEADERBOARD_CATEGORIES).flatMap(category => category.roles),
+  ...AUTO_ROLE_NAMES
 ].map(name => name.toLowerCase()));
 
 function isLoggedRole(role) {

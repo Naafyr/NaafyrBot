@@ -12,6 +12,7 @@ import { checkTwitchLive } from './services/twitchLiveService.js';
 import { checkTwitchClips } from './services/twitchClipsService.js';
 import { checkYouTubeUploads } from './services/youtubeUploadService.js';
 import { trackVoiceMinute, flushLeaderboard, updateLeaderboards } from './services/leaderboardService.js';
+import { syncAllRanks } from './services/rankService.js';
 import { checkPatchNotes } from './services/patchNotesService.js';
 import { logger, startupLog, shutdownLog } from './utils/logger.js';
 import { checkBirthdays } from './services/birthdayService.js';
@@ -271,6 +272,7 @@ class TitanBot extends Client {
       await flushLeaderboard(this);
     }));
     cron.schedule('*/10 * * * *', runSafeTask('rangliste_update', () => updateLeaderboards(this)), { timezone: 'Europe/Vienna' });
+    cron.schedule('3,13,23,33,43,53 * * * *', runSafeTask('rank_sync', () => syncAllRanks(this)));
     cron.schedule('5,35 * * * *', runSafeTask('patchnotes_check', () => checkPatchNotes(this)));
     cron.schedule('*/10 * * * *', runSafeTask('twitch_clips_check', () => checkTwitchClips(this)));
   }
