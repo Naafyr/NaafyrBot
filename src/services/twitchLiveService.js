@@ -260,7 +260,11 @@ async function loadActiveMessage(client, channel, recordKey) {
 }
 
 // Einmalig beim Start: alle Bot-Nachrichten im Live-Channel löschen außer der neuesten (Aufräumen nach dem Spam-Fehler).
-export async function cleanupLiveChannelOnce(client) {
+export function cleanupLiveChannelOnce(client) {
+  return withLiveLock(() => runLiveChannelCleanup(client));
+}
+
+async function runLiveChannelCleanup(client) {
   for (const guild of client.guilds.cache.values()) {
     const doneKey = `guild:${guild.id}:migration:liveCleanup`;
     try {
@@ -406,7 +410,33 @@ async function handleGuild(client, guild, stream, config) {
   }
 }
 
+// Live-Prüfung und Aufräumen dürfen NIE gleichzeitig laufen (sonst posten zwei Durchläufe doppelt).
+let liveLock = Promise.resolve();
+let checkRunning = false;
+async function withLiveLock(task) {
+  const previous = liveLock;
+  let release;
+  liveLock = new Promise(resolve => { release = resolve; });
+  await previous;
+  try {
+    return await task();
+  } finally {
+    release();
+  }
+}
+
 export async function checkTwitchLive(client) {
+  // Läuft der letzte Durchlauf noch (z. B. Twitch langsam), diesen Tick auslassen.
+  if (checkRunning) return;
+  checkRunning = true;
+  try {
+    await withLiveLock(() => runTwitchLiveCheck(client));
+  } finally {
+    checkRunning = false;
+  }
+}
+
+async function runTwitchLiveCheck(client) {
   const config = getTwitchConfig();
 
   if (!config) {
