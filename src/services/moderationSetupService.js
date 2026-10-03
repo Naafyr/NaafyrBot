@@ -9,9 +9,9 @@ import {
 import { getGuildConfig, updateGuildConfig } from './config/guildConfig.js';
 import { logEvent } from './loggingService.js';
 import { logger } from '../utils/logger.js';
-import { CATEGORY_ORDER } from '../utils/categoryOrder.js';
+import { CATEGORY_ORDER, migrateCategoryNames } from '../utils/categoryOrder.js';
 
-export const MOD_CATEGORY_NAME = '──── 🛡️ MODERATION 🛡️ ────';
+export const MOD_CATEGORY_NAME = '▬▬▬ 🛡️ MODERATION 🛡️ ▬▬▬';
 export const MOD_LOG_NAME = '📝┃mod-log';
 
 const NEW_ACCOUNT_DAYS = 7;
@@ -117,11 +117,12 @@ export async function ensureAfkChannel(guild) {
 }
 
 // Discords Standard-Kategorien beim Server-Erstellen ("Textkanäle" → #allgemein, "Sprachkanäle" → Allgemein).
-// Nur exakte Original-Namen – unsere eigenen Channels (💬┃allgemein, ──── 🔊 VOICE 🔊 ────) bleiben unberührt.
+// Nur exakte Original-Namen – unsere eigenen Channels (💬┃allgemein, ▬▬▬ 🔊 VOICE 🔊 ▬▬▬) bleiben unberührt.
 const DEFAULT_CATEGORY_NAMES = new Set(['textkanäle', 'text channels', 'sprachkanäle', 'voice channels', 'voice']);
 const DEFAULT_CHANNEL_NAMES = new Set(['allgemein', 'general']);
 
 export async function removeDiscordDefaults(guild, { keepChannelId = null } = {}) {
+  await migrateCategoryNames(guild);
   const removed = [];
   const categories = guild.channels.cache.filter(channel =>
     channel.type === ChannelType.GuildCategory && DEFAULT_CATEGORY_NAMES.has(channel.name.toLowerCase())
@@ -142,7 +143,7 @@ export async function removeDiscordDefaults(guild, { keepChannelId = null } = {}
     }
   }
 
-  // Die Standard-Voice "Allgemein" kann auch in einer umbenannten Kategorie stecken (z. B. ──── 🔊 VOICE 🔊 ────).
+  // Die Standard-Voice "Allgemein" kann auch in einer umbenannten Kategorie stecken (z. B. ▬▬▬ 🔊 VOICE 🔊 ▬▬▬).
   const defaultVoices = guild.channels.cache.filter(channel =>
     channel.type === ChannelType.GuildVoice &&
     DEFAULT_CHANNEL_NAMES.has(channel.name.toLowerCase()) &&
@@ -152,7 +153,7 @@ export async function removeDiscordDefaults(guild, { keepChannelId = null } = {}
     await voice.delete('Discord-Standard-Voice entfernt').then(() => removed.push(`🔊 ${voice.name}`)).catch(() => {});
   }
 
-  // Leere Doppel unserer Kategorien (z. B. eine alte "VOICE"-Kategorie neben ──── 🔊 VOICE 🔊 ────).
+  // Leere Doppel unserer Kategorien (z. B. eine alte "VOICE"-Kategorie neben ▬▬▬ 🔊 VOICE 🔊 ▬▬▬).
   const allCategories = guild.channels.cache.filter(channel => channel.type === ChannelType.GuildCategory);
   for (const category of allCategories.values()) {
     const entry = CATEGORY_ORDER.find(item => category.name.toUpperCase().includes(item.keyword));

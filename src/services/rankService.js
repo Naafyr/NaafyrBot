@@ -32,7 +32,7 @@ function findSeparator(guild, key) {
   return guild.roles.cache.find(role => !role.managed && /^(━━━|───|▬▬▬) /.test(role.name) && role.name.includes(` ${SEPARATOR_LABELS[key]} `)) || null;
 }
 
-export const VIP_CATEGORY_NAME = '──── 💎 VIP 💎 ────';
+export const VIP_CATEGORY_NAME = '▬▬▬ 💎 VIP 💎 ▬▬▬';
 const VIP_CHANNELS = { chat: '💬┃vip-chat', lounge: '🔊┃VIP-Lounge', waiting: '⏳┃vip-warteraum' };
 
 const isSeparatorName = name => /^(━━━|───|▬▬▬) /.test(name);

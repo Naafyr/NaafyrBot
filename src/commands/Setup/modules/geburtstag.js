@@ -10,7 +10,7 @@ import { replyUserError, ErrorTypes } from '../../../utils/errorHandler.js';
 import { logger } from '../../../utils/logger.js';
 
 const CHANNEL_NAME = '🎂┃geburtstage';
-const COMMUNITY_CATEGORY = '──── 💬 COMMUNITY 💬 ────';
+const COMMUNITY_CATEGORY = '▬▬▬ 💬 COMMUNITY 💬 ▬▬▬';
 
 async function getOrCreateChannel(guild) {
   const existing = guild.channels.cache.find(channel =>

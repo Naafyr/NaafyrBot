@@ -8,8 +8,8 @@ import {
 } from 'discord.js';
 
 export const ROLE_SELECTION_CHANNEL_NAMES = new Set(['🎭┃rollen-auswahl', 'rollen-auswahl', 'rollen']);
-export const GAMES_CATEGORY_NAME = '──── 🎮 GAMES 🎮 ────';
-export const PATCHNOTES_CATEGORY_NAME = '──── 📰 PATCH-NOTES 📰 ────';
+export const GAMES_CATEGORY_NAME = '▬▬▬ 🎮 GAMES 🎮 ▬▬▬';
+export const PATCHNOTES_CATEGORY_NAME = '▬▬▬ 📰 PATCH-NOTES 📰 ▬▬▬';
 
 // Reihenfolge = Reihenfolge der Buttons und Channels.
 // aliases: bestehende Rollen werden wiederverwendet statt doppelt angelegt.

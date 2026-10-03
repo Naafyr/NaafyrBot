@@ -251,37 +251,37 @@ export default {
 
             const moinCategory = await getOrCreateCategory(
                 guild,
-                '──── 👋 MOIN 👋 ────',
+                '▬▬▬ 👋 MOIN 👋 ▬▬▬',
                 ['Moin', 'Start', 'Start Hier']
             );
 
             const contentCategory = await getOrCreateCategory(
                 guild,
-                '──── 🎬 CONTENT 🎬 ────',
+                '▬▬▬ 🎬 CONTENT 🎬 ▬▬▬',
                 ['Content']
             );
 
             const welcomeCategory = await getOrCreateCategory(
                 guild,
-                '──── 🎭 WILLKOMMEN 🎭 ────',
+                '▬▬▬ 🎭 WILLKOMMEN 🎭 ▬▬▬',
                 ['Willkommen']
             );
 
             const communityCategory = await getOrCreateCategory(
                 guild,
-                '──── 💬 COMMUNITY 💬 ────',
+                '▬▬▬ 💬 COMMUNITY 💬 ▬▬▬',
                 ['Community', 'Treffpunkt', 'Chats']
             );
 
             const voiceCategory = await getOrCreateCategory(
                 guild,
-                '──── 🔊 VOICE 🔊 ────',
+                '▬▬▬ 🔊 VOICE 🔊 ▬▬▬',
                 ['Voice', 'Sprachkanäle', 'Sprachchannel']
             );
 
             const leaderboardCategory = await getOrCreateCategory(
                 guild,
-                '──── 🏆 LEADERBOARD 🏆 ────',
+                '▬▬▬ 🏆 LEADERBOARD 🏆 ▬▬▬',
                 ['Leaderboard', 'Leaderboards', 'Ranglisten']
             );
 

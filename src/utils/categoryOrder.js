@@ -4,17 +4,17 @@ import { logger } from './logger.js';
 // Gewünschte Reihenfolge von oben nach unten. Erkannt wird über den exakten Namen,
 // sonst über ein Stichwort im Namen (falls eine Kategorie früher anders hieß).
 export const CATEGORY_ORDER = [
-  { name: '──── 📊 SERVER-STATISTIKEN 📊 ────', keyword: 'STATISTIK' },
-  { name: '──── 👋 MOIN 👋 ────', keyword: 'MOIN' },
-  { name: '──── 🎬 CONTENT 🎬 ────', keyword: 'CONTENT' },
-  { name: '──── 🏆 LEADERBOARD 🏆 ────', keyword: 'LEADERBOARD' },
-  { name: '──── 🎭 WILLKOMMEN 🎭 ────', keyword: 'WILLKOMMEN' },
-  { name: '──── 💬 COMMUNITY 💬 ────', keyword: 'COMMUNITY' },
-  { name: '──── 🔊 VOICE 🔊 ────', keyword: 'VOICE' },
-  { name: '──── 💎 VIP 💎 ────', keyword: 'VIP' },
-  { name: '──── 🎮 GAMES 🎮 ────', keyword: 'GAMES' },
-  { name: '──── 📰 PATCH-NOTES 📰 ────', keyword: 'PATCH' },
-  { name: '──── 🛡️ MODERATION 🛡️ ────', keyword: 'MODERATION' }
+  { name: '▬▬▬ 📊 SERVER-STATISTIKEN 📊 ▬▬▬', keyword: 'STATISTIK' },
+  { name: '▬▬▬ 👋 MOIN 👋 ▬▬▬', keyword: 'MOIN' },
+  { name: '▬▬▬ 🎬 CONTENT 🎬 ▬▬▬', keyword: 'CONTENT' },
+  { name: '▬▬▬ 🏆 LEADERBOARD 🏆 ▬▬▬', keyword: 'LEADERBOARD' },
+  { name: '▬▬▬ 🎭 WILLKOMMEN 🎭 ▬▬▬', keyword: 'WILLKOMMEN' },
+  { name: '▬▬▬ 💬 COMMUNITY 💬 ▬▬▬', keyword: 'COMMUNITY' },
+  { name: '▬▬▬ 🔊 VOICE 🔊 ▬▬▬', keyword: 'VOICE' },
+  { name: '▬▬▬ 💎 VIP 💎 ▬▬▬', keyword: 'VIP' },
+  { name: '▬▬▬ 🎮 GAMES 🎮 ▬▬▬', keyword: 'GAMES' },
+  { name: '▬▬▬ 📰 PATCH-NOTES 📰 ▬▬▬', keyword: 'PATCH' },
+  { name: '▬▬▬ 🛡️ MODERATION 🛡️ ▬▬▬', keyword: 'MODERATION' }
 ];
 
 // Die Statistik-Kategorie erkennt man sicher an ihren Zähler-Channels.
@@ -45,8 +45,23 @@ export function desiredCategoryOrder(categories, channels = []) {
   return [...known, ...others];
 }
 
+// Alte Kategorie-Namen "──── X ────" auf den neuen Stil "▬▬▬ X ▬▬▬" umbenennen.
+export async function migrateCategoryNames(guild) {
+  for (const category of guild.channels.cache.values()) {
+    if (category.type !== ChannelType.GuildCategory) continue;
+    const match = category.name.match(/^─{3,} (.+) ─{3,}$/);
+    if (!match) continue;
+    try {
+      await category.setName(`▬▬▬ ${match[1]} ▬▬▬`, 'Neuer Kategorie-Stil');
+    } catch (error) {
+      logger.warn('[Kategorien] Umbenennen fehlgeschlagen', { guildId: guild.id, category: category.name, error: error.message });
+    }
+  }
+}
+
 // Sortiert die Kategorien. Gibt die Namen zurück, die nicht verschoben werden konnten.
 export async function sortCategories(guild) {
+  await migrateCategoryNames(guild);
   const allChannels = [...guild.channels.cache.values()];
   const categories = allChannels
     .filter(channel => channel.type === ChannelType.GuildCategory)
