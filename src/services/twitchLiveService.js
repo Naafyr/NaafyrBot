@@ -248,10 +248,15 @@ function sameStream(message, stream) {
 // auch wenn die Nachricht beim Durchsuchen mal nicht gefunden wird.
 async function loadActiveMessage(client, channel, recordKey) {
   const record = await client.db?.get?.(recordKey).catch(() => null);
-  let message = record?.messageId ? await channel.messages.fetch(record.messageId).catch(() => null) : null;
+  let deleted = false;
+  let message = record?.messageId
+    ? await channel.messages.fetch(record.messageId).catch(error => { deleted = error?.code === 10008; return null; })
+    : null;
   if (!message) message = await findActiveBotMessage(channel, client.user.id);
   const isLive = message?.embeds?.[0]?.footer?.text === ACTIVE_FOOTER;
-  return { record: record && typeof record === 'object' ? record : null, message: isLive ? message : null };
+  // Gemerkte Nachricht wurde gelöscht (Discord: "Unknown Message") → Merker gilt nicht mehr.
+  const validRecord = record && typeof record === 'object' && !(deleted && !isLive) ? record : null;
+  return { record: validRecord, message: isLive ? message : null };
 }
 
 // Einmalig beim Start: alle Bot-Nachrichten im Live-Channel löschen außer der neuesten (Aufräumen nach dem Spam-Fehler).
